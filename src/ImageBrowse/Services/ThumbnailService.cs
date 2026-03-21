@@ -103,9 +103,11 @@ public sealed class ThumbnailService : IDisposable
             int width, height;
 
             var ext = Path.GetExtension(filePath).ToLowerInvariant();
-            if (ext is ".jpg" or ".jpeg" or ".png" or ".bmp" or ".gif" or ".tiff" or ".tif")
+            if (ext is ".jpg" or ".jpeg" or ".png" or ".bmp" or ".gif" or ".tiff" or ".tif" or ".ico" or ".jfif")
             {
                 (thumbnailData, width, height) = GenerateWithWpf(filePath);
+                if (thumbnailData.Length == 0)
+                    (thumbnailData, width, height) = GenerateWithMagick(filePath);
             }
             else
             {
@@ -136,33 +138,29 @@ public sealed class ThumbnailService : IDisposable
     {
         try
         {
-            var original = new BitmapImage();
-            original.BeginInit();
-            original.CacheOption = BitmapCacheOption.OnLoad;
-            original.UriSource = new Uri(filePath, UriKind.Absolute);
-            original.EndInit();
-            original.Freeze();
+            int orientation = ExifOrientationService.ReadOrientation(filePath);
 
-            int origW = original.PixelWidth;
-            int origH = original.PixelHeight;
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.DecodePixelWidth = ThumbnailSize;
+            bitmap.UriSource = new Uri(filePath, UriKind.Absolute);
+            bitmap.EndInit();
+            bitmap.Freeze();
 
-            var thumbnail = new BitmapImage();
-            thumbnail.BeginInit();
-            thumbnail.CacheOption = BitmapCacheOption.OnLoad;
-            thumbnail.UriSource = new Uri(filePath, UriKind.Absolute);
-            thumbnail.DecodePixelWidth = ThumbnailSize;
-            thumbnail.EndInit();
-            thumbnail.Freeze();
+            var oriented = ExifOrientationService.ApplyOrientation(bitmap, orientation);
+            int origW = oriented.PixelWidth;
+            int origH = oriented.PixelHeight;
 
             var encoder = new JpegBitmapEncoder { QualityLevel = 85 };
-            encoder.Frames.Add(BitmapFrame.Create(thumbnail));
+            encoder.Frames.Add(BitmapFrame.Create(oriented));
             using var ms = new MemoryStream();
             encoder.Save(ms);
             return (ms.ToArray(), origW, origH);
         }
         catch
         {
-            return GenerateWithMagick(filePath);
+            return ([], 0, 0);
         }
     }
 

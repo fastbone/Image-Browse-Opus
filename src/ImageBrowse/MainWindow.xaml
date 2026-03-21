@@ -5,6 +5,7 @@
         xmlns:helpers="clr-namespace:ImageBrowse.Helpers"
         xmlns:models="clr-namespace:ImageBrowse.Models"
         Title="Image Browse" Width="1400" Height="900"
+        Icon="pack://application:,,,/Resources/app.ico"
         WindowStartupLocation="CenterScreen"
         MinWidth="800" MinHeight="500"
         KeyDown="Window_KeyDown"
@@ -110,6 +111,9 @@
                     <Button Content="&#x2699;" ToolTip="Settings (Ctrl+,)"
                             Style="{DynamicResource ToolbarButton}" FontSize="18" Margin="2,0,0,0"
                             Click="SettingsButton_Click" />
+                    <Button Content="&#x2139;" ToolTip="About (F1)"
+                            Style="{DynamicResource ToolbarButton}" FontSize="16" Margin="2,0,0,0"
+                            Click="AboutButton_Click" />
                 </StackPanel>
             </Grid>
         </Border>
@@ -156,6 +160,10 @@
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
                 <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="UpdateNotification" FontSize="12" Margin="8,0"
+                               Foreground="{DynamicResource AccentBrush}" Cursor="Hand"
+                               MouseDown="UpdateNotification_MouseDown"
+                               Visibility="Collapsed" />
                     <TextBlock FontSize="12" Margin="8,0">
                         <Run Text="Thumbnail: " />
                         <Run Text="{Binding ThumbnailSize, Mode=OneWay}" />

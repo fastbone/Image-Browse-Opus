@@ -51,15 +51,18 @@ public sealed class ImageLoadingService
         }
     }
 
+    private static readonly HashSet<string> WpfNativeExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".tif", ".ico", ".jfif"
+    };
+
     public BitmapSource? LoadFullImage(string filePath, int maxDimension = 0)
     {
         try
         {
-            var ext = Path.GetExtension(filePath).ToLowerInvariant();
-            if (ext is ".jpg" or ".jpeg" or ".png" or ".bmp" or ".gif" or ".tiff" or ".tif" or ".ico")
-            {
+            var ext = Path.GetExtension(filePath);
+            if (WpfNativeExtensions.Contains(ext))
                 return LoadWithWpfNative(filePath, maxDimension);
-            }
 
             return LoadWithMagick(filePath, maxDimension);
         }
@@ -73,6 +76,8 @@ public sealed class ImageLoadingService
     {
         try
         {
+            int orientation = ExifOrientationService.ReadOrientation(filePath);
+
             var bitmap = new BitmapImage();
             bitmap.BeginInit();
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
@@ -81,7 +86,8 @@ public sealed class ImageLoadingService
                 bitmap.DecodePixelWidth = maxDimension;
             bitmap.EndInit();
             bitmap.Freeze();
-            return bitmap;
+
+            return ExifOrientationService.ApplyOrientation(bitmap, orientation);
         }
         catch
         {

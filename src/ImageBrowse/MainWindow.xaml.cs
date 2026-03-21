@@ -1,4 +1,5 @@
 using ImageBrowse.Models;
+using ImageBrowse.Services;
 using ImageBrowse.ViewModels;
 using ImageBrowse.Views;
 using System.ComponentModel;
@@ -12,6 +13,7 @@ namespace ImageBrowse;
 public partial class MainWindow : Window
 {
     private readonly MainViewModel _vm;
+    private readonly UpdateService _updateService = new();
     private readonly Stack<string> _backHistory = new();
     private readonly Stack<string> _forwardHistory = new();
     private bool _navigatingFromHistory;
@@ -37,6 +39,22 @@ public partial class MainWindow : Window
             startPath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
         if (Directory.Exists(startPath))
             _ = NavigateToPath(startPath);
+
+        _ = CheckForUpdatesInBackground();
+    }
+
+    private async Task CheckForUpdatesInBackground()
+    {
+        try
+        {
+            var newVersion = await _updateService.CheckForUpdatesAsync();
+            if (newVersion is not null)
+            {
+                UpdateNotification.Text = $"Update {newVersion} available — click to update";
+                UpdateNotification.Visibility = Visibility.Visible;
+            }
+        }
+        catch { }
     }
 
     private void Window_Closing(object sender, CancelEventArgs e)
@@ -317,6 +335,11 @@ public partial class MainWindow : Window
                 OpenPrescanDialog();
                 e.Handled = true;
                 break;
+
+            case Key.F1:
+                OpenAboutDialog();
+                e.Handled = true;
+                break;
         }
     }
 
@@ -408,5 +431,22 @@ public partial class MainWindow : Window
         var dialog = new PrescanDialog(_vm.Database, currentPath);
         dialog.Owner = this;
         dialog.ShowDialog();
+    }
+
+    private void AboutButton_Click(object sender, RoutedEventArgs e)
+    {
+        OpenAboutDialog();
+    }
+
+    private void OpenAboutDialog()
+    {
+        var dialog = new AboutDialog(_updateService);
+        dialog.Owner = this;
+        dialog.ShowDialog();
+    }
+
+    private void UpdateNotification_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        OpenAboutDialog();
     }
 }

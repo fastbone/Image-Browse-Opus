@@ -8,8 +8,8 @@ public partial class ImageItem : ObservableObject
     public required string FilePath { get; init; }
     public required string FileName { get; init; }
     public required string Extension { get; init; }
-    public required long FileSize { get; init; }
-    public required DateTime DateModified { get; init; }
+    public required long FileSize { get; set; }
+    public required DateTime DateModified { get; set; }
     public required DateTime DateCreated { get; init; }
 
     [ObservableProperty] private BitmapSource? _thumbnail;

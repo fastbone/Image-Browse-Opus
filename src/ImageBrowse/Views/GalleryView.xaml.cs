@@ -1,6 +1,8 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ImageBrowse.Services;
 using ImageBrowse.ViewModels;
 
 namespace ImageBrowse.Views;
@@ -61,6 +63,11 @@ public partial class GalleryView : UserControl
                 e.Handled = true;
                 break;
 
+            case Key.R when Keyboard.Modifiers == ModifierKeys.None:
+                RotateSelectedImage();
+                e.Handled = true;
+                break;
+
             case Key.Q:
                 ViewModel.ToggleTagCommand.Execute(null);
                 e.Handled = true;
@@ -91,6 +98,28 @@ public partial class GalleryView : UserControl
             _ = ViewModel.NavigateToFolder(ViewModel.SelectedItem.FilePath);
         else
             ViewModel.EnterFullscreen();
+    }
+
+    private void RotateSelectedImage()
+    {
+        if (ViewModel is null) return;
+        var item = ViewModel.SelectedItem;
+        if (item is null || item.IsFolder) return;
+
+        try
+        {
+            var (newW, newH) = ImageRotationService.RotateClockwise90(item.FilePath);
+            var fi = new FileInfo(item.FilePath);
+            item.ImageWidth = newW;
+            item.ImageHeight = newH;
+            item.DateModified = fi.LastWriteTime;
+            item.FileSize = fi.Length;
+            ViewModel.RefreshThumbnail(item);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Rotation failed: {ex.Message}");
+        }
     }
 
     private void NavigateUp()

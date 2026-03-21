@@ -1,0 +1,50 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Extract version from tag
+        id: version
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          echo "version=$TAG" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "Building version $TAG+$SHORT_SHA"
+
+      - name: Publish application
+        run: >
+          dotnet publish src/ImageBrowse/ImageBrowse.csproj
+          -c Release
+          -o publish
+          -r win-x64
+          --self-contained true
+          /p:Version=${{ steps.version.outputs.version }}
+          /p:SourceRevisionId=${{ steps.version.outputs.short_sha }}
+
+      - name: Create Velopack release
+        run: |
+          dotnet tool install -g vpk
+          vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} || true
+          vpk pack --packId ImageBrowse --packVersion ${{ steps.version.outputs.version }} --packDir publish --mainExe ImageBrowse.exe
+          vpk upload github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} --publish --releaseName "Image Browse ${{ steps.version.outputs.version }}" --tag v${{ steps.version.outputs.version }}

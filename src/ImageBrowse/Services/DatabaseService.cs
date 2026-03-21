@@ -294,6 +294,21 @@ public sealed class DatabaseService : IDisposable
         cmd.ExecuteNonQuery();
     }
 
+    public void DeleteThumbnail(string filePath)
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "DELETE FROM thumbnails WHERE file_path = $path";
+        cmd.Parameters.AddWithValue("$path", filePath);
+        cmd.ExecuteNonQuery();
+    }
+
+    public int ClearAllThumbnails()
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "DELETE FROM thumbnails";
+        return cmd.ExecuteNonQuery();
+    }
+
     public void Dispose()
     {
         _connection.Dispose();

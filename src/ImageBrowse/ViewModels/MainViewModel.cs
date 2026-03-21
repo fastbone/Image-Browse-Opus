@@ -456,6 +456,41 @@ public partial class MainViewModel : ObservableObject, IDisposable
         return null;
     }
 
+    public void RefreshThumbnail(ImageItem item)
+    {
+        if (item.IsFolder) return;
+        _db.DeleteThumbnail(item.FilePath);
+        item.Thumbnail = null;
+        item.IsThumbnailLoading = true;
+        _thumbnailService.RequestThumbnail(item.FilePath, item.DateModified, item.FileSize);
+
+        RefreshParentFolderThumbnail(item.FilePath);
+    }
+
+    public void RefreshParentFolderThumbnail(string filePath)
+    {
+        var parentDir = Path.GetDirectoryName(filePath);
+        if (string.IsNullOrEmpty(parentDir)) return;
+
+        var folderItem = SortedImages.FirstOrDefault(i => i.IsFolder &&
+            string.Equals(i.FilePath, parentDir, StringComparison.OrdinalIgnoreCase));
+        if (folderItem is null) return;
+
+        _db.DeleteThumbnail(parentDir);
+
+        try
+        {
+            var dirInfo = new DirectoryInfo(parentDir);
+            if (dirInfo.Exists)
+                folderItem.DateModified = dirInfo.LastWriteTime;
+        }
+        catch { }
+
+        folderItem.Thumbnail = null;
+        folderItem.IsThumbnailLoading = true;
+        _folderThumbnailService.RequestThumbnail(parentDir, folderItem.DateModified);
+    }
+
     public System.Windows.Media.Imaging.BitmapSource? LoadFullImage(string filePath)
     {
         return _imageLoadingService.LoadFullImage(filePath);

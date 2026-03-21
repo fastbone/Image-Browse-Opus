@@ -97,6 +97,16 @@ public partial class SettingsDialog : Window
         Close();
     }
 
+    private void ClearCache_Click(object sender, RoutedEventArgs e)
+    {
+        int count = _vm.Database.ClearAllThumbnails();
+        MessageBox.Show(this,
+            $"Cleared {count:N0} cached thumbnail{(count != 1 ? "s" : "")}.\nThumbnails will regenerate as you browse.",
+            "Thumbnail Cache Cleared",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape)

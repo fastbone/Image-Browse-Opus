@@ -1,5 +1,7 @@
 using ImageBrowse.Models;
+using ImageBrowse.Services;
 using ImageBrowse.ViewModels;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
@@ -249,6 +251,11 @@ public partial class FullscreenViewer : Window
                 e.Handled = true;
                 break;
 
+            case Key.R when Keyboard.Modifiers == ModifierKeys.None:
+                RotateCurrentImage();
+                e.Handled = true;
+                break;
+
             case Key.Q:
                 if (_vm.SelectedItem is not null)
                 {
@@ -283,6 +290,29 @@ public partial class FullscreenViewer : Window
                 SetRating(5);
                 e.Handled = true;
                 break;
+        }
+    }
+
+    private void RotateCurrentImage()
+    {
+        var item = _vm.SelectedItem;
+        if (item is null || item.IsFolder) return;
+
+        try
+        {
+            var (newW, newH) = ImageRotationService.RotateClockwise90(item.FilePath);
+            var fi = new FileInfo(item.FilePath);
+            item.ImageWidth = newW;
+            item.ImageHeight = newH;
+            item.DateModified = fi.LastWriteTime;
+            item.FileSize = fi.Length;
+            _vm.RefreshThumbnail(item);
+            LoadCurrentImage();
+            if (_infoVisible) UpdateInfo(item);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Rotation failed: {ex.Message}");
         }
     }
 

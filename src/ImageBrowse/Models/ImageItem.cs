@@ -31,6 +31,7 @@ public partial class ImageItem : ObservableObject
     public bool MetadataLoaded { get; set; }
 
     public bool IsFolder { get; init; }
+    public bool IsParentFolder { get; init; }
     public int FolderImageCount { get; set; }
     public int FolderSubfolderCount { get; set; }
 
@@ -39,9 +40,11 @@ public partial class ImageItem : ObservableObject
 
     public string FileSizeDisplay => FormatFileSize(FileSize);
 
-    public string SubtitleDisplay => IsFolder
-        ? FormatFolderSubtitle()
-        : $"{DimensionsDisplay}  {FileSizeDisplay}";
+    public string SubtitleDisplay => IsParentFolder
+        ? "Parent folder"
+        : IsFolder
+            ? FormatFolderSubtitle()
+            : $"{DimensionsDisplay}  {FileSizeDisplay}";
 
     private string FormatFolderSubtitle()
     {

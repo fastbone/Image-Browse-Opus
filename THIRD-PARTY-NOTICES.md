@@ -507,7 +507,7 @@ See https://www.sqlite.org/copyright.html for details.
 
 ## .NET Runtime
 
-Image Browse targets .NET 8.0, which is licensed under the MIT License by
+Image Browse targets .NET 10.0, which is licensed under the MIT License by
 the .NET Foundation. See https://github.com/dotnet/runtime/blob/main/LICENSE.TXT
 for the full license text.
 

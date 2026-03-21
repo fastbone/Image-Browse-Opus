@@ -82,8 +82,38 @@
                     <Border Grid.Row="0" Background="{DynamicResource BgSurfaceBrush}" CornerRadius="4"
                             ClipToBounds="True">
                         <Grid>
+                            <!-- Parent folder up-arrow icon -->
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsParentFolder}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <TextBlock Text="⬆" FontSize="48" Foreground="{DynamicResource FgMutedBrush}"
+                                           HorizontalAlignment="Center" />
+                                <TextBlock Text=".." FontSize="18" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource FgMutedBrush}"
+                                           HorizontalAlignment="Center" Margin="0,-4,0,0" />
+                            </StackPanel>
+
+                            <!-- Regular thumbnail (hidden for parent folder) -->
                             <Image Source="{Binding Thumbnail}" Stretch="Uniform"
-                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                                   RenderOptions.BitmapScalingMode="HighQuality">
+                                <Image.Style>
+                                    <Style TargetType="Image">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsParentFolder}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Image.Style>
+                            </Image>
 
                             <!-- Loading indicator -->
                             <TextBlock Text="..." FontSize="20"
@@ -110,8 +140,21 @@
 
                             <!-- Folder badge overlay -->
                             <Border Background="#AA000000" CornerRadius="0,0,4,4"
-                                    VerticalAlignment="Bottom" Padding="4,2"
-                                    Visibility="{Binding IsFolder, Converter={StaticResource BoolToVis}}">
+                                    VerticalAlignment="Bottom" Padding="4,2">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsFolder}" Value="True" />
+                                                    <Condition Binding="{Binding IsParentFolder}" Value="False" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
                                 <TextBlock Text="📁 Folder" FontSize="10" Foreground="White"
                                            HorizontalAlignment="Center" />
                             </Border>

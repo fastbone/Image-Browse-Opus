@@ -1,9 +1,9 @@
 # Image Browse
 
-A lightweight, fast image browser for Windows built with .NET 8 and WPF.
+A lightweight, fast image browser for Windows built with .NET 10 and WPF.
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
-[![.NET 8](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/download/dotnet/10.0)
 [![GitHub release](https://img.shields.io/github/v/release/fastbone/Image-Browse-Opus)](https://github.com/fastbone/Image-Browse-Opus/releases)
 
 ---
@@ -150,7 +150,7 @@ Image Browse supports over 80 file formats. Commonly used formats are loaded thr
 ## System Requirements
 
 - **OS**: Windows 10 or Windows 11 (64-bit), version 1809 (build 17763) or later
-- **Runtime**: .NET 8.0 Desktop Runtime ([download](https://dotnet.microsoft.com/download/dotnet/8.0))
+- **Runtime**: .NET 10.0 Desktop Runtime ([download](https://dotnet.microsoft.com/download/dotnet/10.0))
 
 ---
 
@@ -169,8 +169,8 @@ When installed via Velopack, Image Browse checks for updates automatically on st
 
 #### Prerequisites
 
-- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or later
-- [Visual Studio 2022](https://visualstudio.microsoft.com/) (v17.8+) with the **.NET desktop development** workload, or any editor with `dotnet` CLI access
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) or later
+- [Visual Studio 2026](https://visualstudio.microsoft.com/) or later with the **.NET desktop development** workload, or any editor with `dotnet` CLI access
 
 #### Clone and Build
 
@@ -187,7 +187,7 @@ dotnet build src/ImageBrowse/ImageBrowse.csproj -c Release
 dotnet run --project src/ImageBrowse/ImageBrowse.csproj -c Release
 ```
 
-The compiled output is placed in `src/ImageBrowse/bin/Release/net8.0-windows/`.
+The compiled output is placed in `src/ImageBrowse/bin/Release/net10.0-windows/`.
 
 ---
 

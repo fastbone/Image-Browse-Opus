@@ -37,6 +37,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public RangeObservableCollection<ImageItem> SortedImages { get; } = new();
 
     private List<ImageItem> _allImages = [];
+    private ImageItem? _parentFolderItem;
     private CancellationTokenSource? _loadCts;
     private bool _suppressSortSave;
 
@@ -78,6 +79,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _allImages.Clear();
         SelectedItem = null;
         SelectedIndex = -1;
+
+        var parentDir = Directory.GetParent(path);
+        _parentFolderItem = parentDir is not null
+            ? new ImageItem
+            {
+                FilePath = parentDir.FullName,
+                FileName = "..",
+                Extension = "",
+                FileSize = 0,
+                DateModified = parentDir.LastWriteTime,
+                DateCreated = parentDir.CreationTime,
+                IsFolder = true,
+                IsParentFolder = true
+            }
+            : null;
 
         LoadSortPreferenceForFolder(path);
 
@@ -164,6 +180,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             foreach (var item in SortedImages)
             {
                 if (ct.IsCancellationRequested) break;
+                if (item.IsParentFolder) continue;
 
                 if (item.IsFolder)
                 {
@@ -231,7 +248,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void ApplySortAndPopulate()
     {
-        SortedImages.ReplaceAll(ApplySort(_allImages));
+        var sorted = ApplySort(_allImages);
+        if (_parentFolderItem is not null)
+            sorted = new[] { _parentFolderItem }.Concat(sorted);
+        SortedImages.ReplaceAll(sorted);
     }
 
     private IEnumerable<ImageItem> ApplySort(IEnumerable<ImageItem> items)

@@ -6,6 +6,7 @@ namespace ImageBrowse.Services;
 public sealed class DatabaseService : IDisposable
 {
     private readonly SqliteConnection _connection;
+    private readonly Lock _lock = new();
     private static readonly string DbPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "ImageBrowse", "cache.db");
@@ -102,7 +103,6 @@ public sealed class DatabaseService : IDisposable
         }
         catch (SqliteException)
         {
-            // Column already exists
         }
 
         using var idx = _connection.CreateCommand();
@@ -112,60 +112,107 @@ public sealed class DatabaseService : IDisposable
 
     public byte[]? GetThumbnail(string filePath, DateTime lastModified)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = "SELECT thumbnail FROM thumbnails WHERE file_path = $path AND last_modified = $modified";
-        cmd.Parameters.AddWithValue("$path", filePath);
-        cmd.Parameters.AddWithValue("$modified", lastModified.ToString("O"));
-        return cmd.ExecuteScalar() as byte[];
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = "SELECT thumbnail FROM thumbnails WHERE file_path = $path AND last_modified = $modified";
+            cmd.Parameters.AddWithValue("$path", filePath);
+            cmd.Parameters.AddWithValue("$modified", lastModified.ToString("O"));
+            return cmd.ExecuteScalar() as byte[];
+        }
     }
 
     public void SaveThumbnail(string filePath, DateTime lastModified, long fileSize, byte[] thumbnailData, int width, int height, string? contentHash = null)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = """
-            INSERT OR REPLACE INTO thumbnails (file_path, last_modified, file_size, thumbnail, width, height, content_hash)
-            VALUES ($path, $modified, $size, $data, $w, $h, $hash)
-            """;
-        cmd.Parameters.AddWithValue("$path", filePath);
-        cmd.Parameters.AddWithValue("$modified", lastModified.ToString("O"));
-        cmd.Parameters.AddWithValue("$size", fileSize);
-        cmd.Parameters.AddWithValue("$data", thumbnailData);
-        cmd.Parameters.AddWithValue("$w", width);
-        cmd.Parameters.AddWithValue("$h", height);
-        cmd.Parameters.AddWithValue("$hash", (object?)contentHash ?? DBNull.Value);
-        cmd.ExecuteNonQuery();
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = """
+                INSERT OR REPLACE INTO thumbnails (file_path, last_modified, file_size, thumbnail, width, height, content_hash)
+                VALUES ($path, $modified, $size, $data, $w, $h, $hash)
+                """;
+            cmd.Parameters.AddWithValue("$path", filePath);
+            cmd.Parameters.AddWithValue("$modified", lastModified.ToString("O"));
+            cmd.Parameters.AddWithValue("$size", fileSize);
+            cmd.Parameters.AddWithValue("$data", thumbnailData);
+            cmd.Parameters.AddWithValue("$w", width);
+            cmd.Parameters.AddWithValue("$h", height);
+            cmd.Parameters.AddWithValue("$hash", (object?)contentHash ?? DBNull.Value);
+            cmd.ExecuteNonQuery();
+        }
     }
 
     public (byte[] Data, int Width, int Height)? GetThumbnailByHash(string contentHash)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = "SELECT thumbnail, width, height FROM thumbnails WHERE content_hash = $hash LIMIT 1";
-        cmd.Parameters.AddWithValue("$hash", contentHash);
-        using var reader = cmd.ExecuteReader();
-        if (reader.Read())
+        lock (_lock)
         {
-            var data = (byte[])reader["thumbnail"];
-            int w = reader.GetInt32(1);
-            int h = reader.GetInt32(2);
-            return (data, w, h);
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = "SELECT thumbnail, width, height FROM thumbnails WHERE content_hash = $hash LIMIT 1";
+            cmd.Parameters.AddWithValue("$hash", contentHash);
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
+            {
+                var data = (byte[])reader["thumbnail"];
+                int w = reader.GetInt32(1);
+                int h = reader.GetInt32(2);
+                return (data, w, h);
+            }
+            return null;
         }
-        return null;
     }
 
     public (int Width, int Height)? GetCachedDimensions(string filePath, DateTime lastModified)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = "SELECT width, height FROM thumbnails WHERE file_path = $path AND last_modified = $modified";
-        cmd.Parameters.AddWithValue("$path", filePath);
-        cmd.Parameters.AddWithValue("$modified", lastModified.ToString("O"));
-        using var reader = cmd.ExecuteReader();
-        if (reader.Read())
+        lock (_lock)
         {
-            int w = reader.GetInt32(0);
-            int h = reader.GetInt32(1);
-            if (w > 0 && h > 0) return (w, h);
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = "SELECT width, height FROM thumbnails WHERE file_path = $path AND last_modified = $modified";
+            cmd.Parameters.AddWithValue("$path", filePath);
+            cmd.Parameters.AddWithValue("$modified", lastModified.ToString("O"));
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
+            {
+                int w = reader.GetInt32(0);
+                int h = reader.GetInt32(1);
+                if (w > 0 && h > 0) return (w, h);
+            }
+            return null;
         }
-        return null;
+    }
+
+    public record CachedMetadata(
+        DateTime? DateTaken, int Width, int Height,
+        string? CameraMake, string? CameraModel, string? LensModel,
+        int? Iso, string? FNumber, string? ExposureTime, string? FocalLength);
+
+    public CachedMetadata? GetMetadata(string filePath, DateTime lastModified)
+    {
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = """
+                SELECT date_taken, image_width, image_height, camera_make, camera_model,
+                       lens_model, iso, f_number, exposure_time, focal_length
+                FROM metadata WHERE file_path = $path AND last_modified = $modified
+                """;
+            cmd.Parameters.AddWithValue("$path", filePath);
+            cmd.Parameters.AddWithValue("$modified", lastModified.ToString("O"));
+            using var reader = cmd.ExecuteReader();
+            if (!reader.Read()) return null;
+
+            DateTime? dateTaken = reader.IsDBNull(0) ? null : DateTime.Parse(reader.GetString(0));
+            return new CachedMetadata(
+                dateTaken,
+                reader.GetInt32(1),
+                reader.GetInt32(2),
+                reader.IsDBNull(3) ? null : reader.GetString(3),
+                reader.IsDBNull(4) ? null : reader.GetString(4),
+                reader.IsDBNull(5) ? null : reader.GetString(5),
+                reader.IsDBNull(6) ? null : reader.GetInt32(6),
+                reader.IsDBNull(7) ? null : reader.GetString(7),
+                reader.IsDBNull(8) ? null : reader.GetString(8),
+                reader.IsDBNull(9) ? null : reader.GetString(9));
+        }
     }
 
     public void SaveMetadata(string filePath, DateTime lastModified,
@@ -173,76 +220,94 @@ public sealed class DatabaseService : IDisposable
         string? cameraMake, string? cameraModel, string? lensModel,
         int? iso, string? fNumber, string? exposureTime, string? focalLength)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = """
-            INSERT OR REPLACE INTO metadata
-            (file_path, last_modified, date_taken, image_width, image_height,
-             camera_make, camera_model, lens_model, iso, f_number, exposure_time, focal_length)
-            VALUES ($path, $modified, $taken, $w, $h, $make, $model, $lens, $iso, $fn, $exp, $fl)
-            """;
-        cmd.Parameters.AddWithValue("$path", filePath);
-        cmd.Parameters.AddWithValue("$modified", lastModified.ToString("O"));
-        cmd.Parameters.AddWithValue("$taken", dateTaken?.ToString("O") ?? (object)DBNull.Value);
-        cmd.Parameters.AddWithValue("$w", width);
-        cmd.Parameters.AddWithValue("$h", height);
-        cmd.Parameters.AddWithValue("$make", (object?)cameraMake ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("$model", (object?)cameraModel ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("$lens", (object?)lensModel ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("$iso", (object?)iso ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("$fn", (object?)fNumber ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("$exp", (object?)exposureTime ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("$fl", (object?)focalLength ?? DBNull.Value);
-        cmd.ExecuteNonQuery();
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = """
+                INSERT OR REPLACE INTO metadata
+                (file_path, last_modified, date_taken, image_width, image_height,
+                 camera_make, camera_model, lens_model, iso, f_number, exposure_time, focal_length)
+                VALUES ($path, $modified, $taken, $w, $h, $make, $model, $lens, $iso, $fn, $exp, $fl)
+                """;
+            cmd.Parameters.AddWithValue("$path", filePath);
+            cmd.Parameters.AddWithValue("$modified", lastModified.ToString("O"));
+            cmd.Parameters.AddWithValue("$taken", dateTaken?.ToString("O") ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("$w", width);
+            cmd.Parameters.AddWithValue("$h", height);
+            cmd.Parameters.AddWithValue("$make", (object?)cameraMake ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$model", (object?)cameraModel ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$lens", (object?)lensModel ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$iso", (object?)iso ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$fn", (object?)fNumber ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$exp", (object?)exposureTime ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$fl", (object?)focalLength ?? DBNull.Value);
+            cmd.ExecuteNonQuery();
+        }
     }
 
     public int GetRating(string filePath)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = "SELECT rating FROM ratings WHERE file_path = $path";
-        cmd.Parameters.AddWithValue("$path", filePath);
-        var result = cmd.ExecuteScalar();
-        return result is long r ? (int)r : 0;
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = "SELECT rating FROM ratings WHERE file_path = $path";
+            cmd.Parameters.AddWithValue("$path", filePath);
+            var result = cmd.ExecuteScalar();
+            return result is long r ? (int)r : 0;
+        }
     }
 
     public bool GetTagged(string filePath)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = "SELECT is_tagged FROM ratings WHERE file_path = $path";
-        cmd.Parameters.AddWithValue("$path", filePath);
-        var result = cmd.ExecuteScalar();
-        return result is long t && t != 0;
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = "SELECT is_tagged FROM ratings WHERE file_path = $path";
+            cmd.Parameters.AddWithValue("$path", filePath);
+            var result = cmd.ExecuteScalar();
+            return result is long t && t != 0;
+        }
     }
 
     public void SetRating(string filePath, int rating)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = """
-            INSERT INTO ratings (file_path, rating, is_tagged) VALUES ($path, $rating, 0)
-            ON CONFLICT(file_path) DO UPDATE SET rating = $rating
-            """;
-        cmd.Parameters.AddWithValue("$path", filePath);
-        cmd.Parameters.AddWithValue("$rating", rating);
-        cmd.ExecuteNonQuery();
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = """
+                INSERT INTO ratings (file_path, rating, is_tagged) VALUES ($path, $rating, 0)
+                ON CONFLICT(file_path) DO UPDATE SET rating = $rating
+                """;
+            cmd.Parameters.AddWithValue("$path", filePath);
+            cmd.Parameters.AddWithValue("$rating", rating);
+            cmd.ExecuteNonQuery();
+        }
     }
 
     public void SetTagged(string filePath, bool tagged)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = """
-            INSERT INTO ratings (file_path, rating, is_tagged) VALUES ($path, 0, $tagged)
-            ON CONFLICT(file_path) DO UPDATE SET is_tagged = $tagged
-            """;
-        cmd.Parameters.AddWithValue("$path", filePath);
-        cmd.Parameters.AddWithValue("$tagged", tagged ? 1 : 0);
-        cmd.ExecuteNonQuery();
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = """
+                INSERT INTO ratings (file_path, rating, is_tagged) VALUES ($path, 0, $tagged)
+                ON CONFLICT(file_path) DO UPDATE SET is_tagged = $tagged
+                """;
+            cmd.Parameters.AddWithValue("$path", filePath);
+            cmd.Parameters.AddWithValue("$tagged", tagged ? 1 : 0);
+            cmd.ExecuteNonQuery();
+        }
     }
 
     public string? GetSetting(string key)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = "SELECT value FROM settings WHERE key = $key";
-        cmd.Parameters.AddWithValue("$key", key);
-        return cmd.ExecuteScalar() as string;
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = "SELECT value FROM settings WHERE key = $key";
+            cmd.Parameters.AddWithValue("$key", key);
+            return cmd.ExecuteScalar() as string;
+        }
     }
 
     public string GetSetting(string key, string defaultValue)
@@ -252,61 +317,79 @@ public sealed class DatabaseService : IDisposable
 
     public void SetSetting(string key, string value)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = """
-            INSERT INTO settings (key, value) VALUES ($key, $value)
-            ON CONFLICT(key) DO UPDATE SET value = $value
-            """;
-        cmd.Parameters.AddWithValue("$key", key);
-        cmd.Parameters.AddWithValue("$value", value);
-        cmd.ExecuteNonQuery();
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = """
+                INSERT INTO settings (key, value) VALUES ($key, $value)
+                ON CONFLICT(key) DO UPDATE SET value = $value
+                """;
+            cmd.Parameters.AddWithValue("$key", key);
+            cmd.Parameters.AddWithValue("$value", value);
+            cmd.ExecuteNonQuery();
+        }
     }
 
     public (int SortField, int SortDirection)? GetFolderSortPreference(string folderPath)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = "SELECT sort_field, sort_direction FROM folder_sort_preferences WHERE folder_path = $path";
-        cmd.Parameters.AddWithValue("$path", folderPath);
-        using var reader = cmd.ExecuteReader();
-        if (reader.Read())
-            return (reader.GetInt32(0), reader.GetInt32(1));
-        return null;
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = "SELECT sort_field, sort_direction FROM folder_sort_preferences WHERE folder_path = $path";
+            cmd.Parameters.AddWithValue("$path", folderPath);
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
+                return (reader.GetInt32(0), reader.GetInt32(1));
+            return null;
+        }
     }
 
     public void SetFolderSortPreference(string folderPath, int sortField, int sortDirection)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = """
-            INSERT INTO folder_sort_preferences (folder_path, sort_field, sort_direction) VALUES ($path, $field, $dir)
-            ON CONFLICT(folder_path) DO UPDATE SET sort_field = $field, sort_direction = $dir
-            """;
-        cmd.Parameters.AddWithValue("$path", folderPath);
-        cmd.Parameters.AddWithValue("$field", sortField);
-        cmd.Parameters.AddWithValue("$dir", sortDirection);
-        cmd.ExecuteNonQuery();
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = """
+                INSERT INTO folder_sort_preferences (folder_path, sort_field, sort_direction) VALUES ($path, $field, $dir)
+                ON CONFLICT(folder_path) DO UPDATE SET sort_field = $field, sort_direction = $dir
+                """;
+            cmd.Parameters.AddWithValue("$path", folderPath);
+            cmd.Parameters.AddWithValue("$field", sortField);
+            cmd.Parameters.AddWithValue("$dir", sortDirection);
+            cmd.ExecuteNonQuery();
+        }
     }
 
     public void ClearFolderSortPreference(string folderPath)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = "DELETE FROM folder_sort_preferences WHERE folder_path = $path";
-        cmd.Parameters.AddWithValue("$path", folderPath);
-        cmd.ExecuteNonQuery();
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = "DELETE FROM folder_sort_preferences WHERE folder_path = $path";
+            cmd.Parameters.AddWithValue("$path", folderPath);
+            cmd.ExecuteNonQuery();
+        }
     }
 
     public void DeleteThumbnail(string filePath)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = "DELETE FROM thumbnails WHERE file_path = $path";
-        cmd.Parameters.AddWithValue("$path", filePath);
-        cmd.ExecuteNonQuery();
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = "DELETE FROM thumbnails WHERE file_path = $path";
+            cmd.Parameters.AddWithValue("$path", filePath);
+            cmd.ExecuteNonQuery();
+        }
     }
 
     public int ClearAllThumbnails()
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = "DELETE FROM thumbnails";
-        return cmd.ExecuteNonQuery();
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = "DELETE FROM thumbnails";
+            return cmd.ExecuteNonQuery();
+        }
     }
 
     public void Dispose()

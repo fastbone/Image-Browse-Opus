@@ -18,6 +18,10 @@ public partial class ImageItem : ObservableObject
     [ObservableProperty] private bool _isTagged;
     [ObservableProperty] private bool _isThumbnailLoading;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SubtitleDisplay))]
+    private int _folderImageCount;
+
     public DateTime? DateTaken { get; set; }
     public int ImageWidth { get; set; }
     public int ImageHeight { get; set; }
@@ -32,7 +36,6 @@ public partial class ImageItem : ObservableObject
 
     public bool IsFolder { get; init; }
     public bool IsParentFolder { get; init; }
-    public int FolderImageCount { get; set; }
     public int FolderSubfolderCount { get; set; }
 
     public string DimensionsDisplay =>

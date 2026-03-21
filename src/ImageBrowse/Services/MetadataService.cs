@@ -22,6 +22,23 @@ public sealed class MetadataService
     {
         if (item.MetadataLoaded) return;
 
+        var cached = _db.GetMetadata(item.FilePath, item.DateModified);
+        if (cached is not null)
+        {
+            item.DateTaken = cached.DateTaken;
+            item.ImageWidth = cached.Width > 0 ? cached.Width : item.ImageWidth;
+            item.ImageHeight = cached.Height > 0 ? cached.Height : item.ImageHeight;
+            item.CameraManufacturer = cached.CameraMake;
+            item.CameraModel = cached.CameraModel;
+            item.LensModel = cached.LensModel;
+            item.Iso = cached.Iso;
+            item.FNumber = cached.FNumber;
+            item.ExposureTime = cached.ExposureTime;
+            item.FocalLength = cached.FocalLength;
+            item.MetadataLoaded = true;
+            return;
+        }
+
         try
         {
             IReadOnlyList<Directory> directories = ImageMetadataReader.ReadMetadata(item.FilePath);
@@ -82,12 +99,11 @@ public sealed class MetadataService
                 item.DateTaken, item.ImageWidth, item.ImageHeight,
                 item.CameraManufacturer, item.CameraModel, item.LensModel,
                 item.Iso, item.FNumber, item.ExposureTime, item.FocalLength);
+
+            item.MetadataLoaded = true;
         }
         catch
         {
-            // Metadata extraction can fail for unsupported or corrupt files
         }
-
-        item.MetadataLoaded = true;
     }
 }

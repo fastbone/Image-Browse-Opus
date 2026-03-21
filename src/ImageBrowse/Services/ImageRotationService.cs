@@ -22,7 +22,6 @@ public static class ImageRotationService
             if (ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase) || ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase))
                 image.Quality = 100;
 
-            image.RemoveProfile("exif");
             image.Write(filePath);
 
             return ((int)image.Width, (int)image.Height);

@@ -60,42 +60,38 @@ public sealed class PrescanService
         int cacheHits = 0;
         int newThumbnails = 0;
 
-        var semaphore = new SemaphoreSlim(Math.Max(2, Environment.ProcessorCount / 2));
+        int maxParallel = Math.Max(2, Environment.ProcessorCount / 2);
 
         foreach (var (folder, files) in folderFiles)
         {
             ct.ThrowIfCancellationRequested();
             foldersScanned++;
 
-            var tasks = files.Select(filePath => Task.Run(async () =>
+            await Parallel.ForEachAsync(files, new ParallelOptions
             {
-                await semaphore.WaitAsync(ct);
-                try
+                MaxDegreeOfParallelism = maxParallel,
+                CancellationToken = ct
+            }, (filePath, token) =>
+            {
+                token.ThrowIfCancellationRequested();
+                bool wasHit = ProcessFile(filePath, db);
+
+                Interlocked.Increment(ref filesProcessed);
+                if (wasHit)
+                    Interlocked.Increment(ref cacheHits);
+                else
+                    Interlocked.Increment(ref newThumbnails);
+
+                if (filesProcessed % 5 == 0 || filesProcessed == totalFiles)
                 {
-                    ct.ThrowIfCancellationRequested();
-                    bool wasHit = ProcessFile(filePath, db);
-
-                    Interlocked.Increment(ref filesProcessed);
-                    if (wasHit)
-                        Interlocked.Increment(ref cacheHits);
-                    else
-                        Interlocked.Increment(ref newThumbnails);
-
-                    if (filesProcessed % 5 == 0 || filesProcessed == totalFiles)
-                    {
-                        ProgressChanged?.Invoke(new PrescanProgress(
-                            folder, foldersScanned, folders.Count,
-                            filesProcessed, totalFiles,
-                            cacheHits, newThumbnails));
-                    }
+                    ProgressChanged?.Invoke(new PrescanProgress(
+                        folder, foldersScanned, folders.Count,
+                        filesProcessed, totalFiles,
+                        cacheHits, newThumbnails));
                 }
-                finally
-                {
-                    semaphore.Release();
-                }
-            }, ct)).ToList();
 
-            await Task.WhenAll(tasks);
+                return ValueTask.CompletedTask;
+            });
 
             ProgressChanged?.Invoke(new PrescanProgress(
                 folder, foldersScanned, folders.Count,
@@ -107,8 +103,6 @@ public sealed class PrescanService
             rootPath, foldersScanned, folders.Count,
             filesProcessed, totalFiles,
             cacheHits, newThumbnails));
-
-        semaphore.Dispose();
     }
 
     private static void CollectFolders(string path, int maxDepth, int currentDepth,

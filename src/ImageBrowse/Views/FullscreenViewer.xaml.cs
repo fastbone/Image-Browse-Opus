@@ -20,6 +20,8 @@ public partial class FullscreenViewer : Window
     private readonly DispatcherTimer _positionFadeTimer;
     private readonly DispatcherTimer _zoomFadeTimer;
     private Point _lastMousePos;
+    private CancellationTokenSource _loadCts = new();
+    private int _loadSequence;
 
     private const double ZoomStep = 0.15;
     private const double MinZoom = 0.1;
@@ -74,9 +76,22 @@ public partial class FullscreenViewer : Window
         var item = _vm.SelectedItem;
         if (item is null) return;
 
+        _loadCts.Cancel();
+        _loadCts = new CancellationTokenSource();
+        var ct = _loadCts.Token;
+        int seq = Interlocked.Increment(ref _loadSequence);
+
         var cached = _prefetch.GetCached(_vm.SelectedIndex);
-        var image = cached ?? await _prefetch.GetOrLoadAsync(_vm.SelectedIndex);
-        DisplayImage.Source = image;
+        if (cached is not null)
+        {
+            DisplayImage.Source = cached;
+        }
+        else
+        {
+            var image = await _prefetch.GetOrLoadAsync(_vm.SelectedIndex);
+            if (ct.IsCancellationRequested || seq != _loadSequence) return;
+            DisplayImage.Source = image;
+        }
 
         _prefetch.UpdatePosition(_vm.SelectedIndex, _vm.SortedImages.Count);
 
@@ -142,9 +157,18 @@ public partial class FullscreenViewer : Window
     private void ShowPosition()
     {
         if (_vm.SortedImages.Count == 0) return;
-        int idx = _vm.SelectedIndex + 1;
-        int total = _vm.SortedImages.Count;
-        PositionText.Text = $"{idx} / {total}";
+
+        int imageIndex = 0;
+        int totalImages = 0;
+        for (int i = 0; i < _vm.SortedImages.Count; i++)
+        {
+            if (_vm.SortedImages[i].IsFolder) continue;
+            totalImages++;
+            if (i <= _vm.SelectedIndex)
+                imageIndex = totalImages;
+        }
+
+        PositionText.Text = $"{imageIndex} / {totalImages}";
 
         FadeIn(PositionIndicator);
         _positionFadeTimer.Stop();
@@ -317,6 +341,14 @@ public partial class FullscreenViewer : Window
         var item = _vm.SelectedItem;
         if (item is null || item.IsFolder) return;
 
+        if (_vm.Settings.ConfirmBeforeDelete)
+        {
+            var result = MessageBox.Show(this,
+                $"Move \"{item.FileName}\" to the Recycle Bin?\n\nYou can disable this confirmation in Settings.",
+                "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result != MessageBoxResult.Yes) return;
+        }
+
         if (FileOperationService.MoveToRecycleBin(item.FilePath))
         {
             _prefetch.Invalidate(_vm.SelectedIndex);
@@ -337,14 +369,14 @@ public partial class FullscreenViewer : Window
         }
     }
 
-    private void RotateCurrentImage()
+    private async void RotateCurrentImage()
     {
         var item = _vm.SelectedItem;
         if (item is null || item.IsFolder) return;
 
         try
         {
-            var (newW, newH) = ImageRotationService.RotateClockwise90(item.FilePath);
+            var (newW, newH) = await Task.Run(() => ImageRotationService.RotateClockwise90(item.FilePath));
             var fi = new FileInfo(item.FilePath);
             item.ImageWidth = newW;
             item.ImageHeight = newH;
@@ -357,7 +389,9 @@ public partial class FullscreenViewer : Window
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Rotation failed: {ex.Message}");
+            MessageBox.Show(this,
+                $"Could not rotate \"{item.FileName}\":\n{ex.Message}",
+                "Rotation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -427,6 +461,11 @@ public partial class FullscreenViewer : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _cursorTimer.Stop();
+        _positionFadeTimer.Stop();
+        _zoomFadeTimer.Stop();
+        _loadCts.Cancel();
+        _loadCts.Dispose();
         _prefetch.Dispose();
         base.OnClosed(e);
     }

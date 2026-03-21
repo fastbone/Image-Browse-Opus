@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using ImageBrowse.Services;
 using ImageBrowse.ViewModels;
 
@@ -12,9 +13,53 @@ public partial class GalleryView : UserControl
     public GalleryView()
     {
         InitializeComponent();
+        GalleryListBox.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(OnScrollChanged));
     }
 
     private MainViewModel? ViewModel => DataContext as MainViewModel;
+
+    private void OnScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        if (ViewModel is null) return;
+        var scrollViewer = FindScrollViewer(GalleryListBox);
+        if (scrollViewer is null) return;
+
+        int firstVisible = 0;
+        int lastVisible = 0;
+
+        for (int i = 0; i < ViewModel.SortedImages.Count; i++)
+        {
+            var container = GalleryListBox.ItemContainerGenerator.ContainerFromIndex(i) as FrameworkElement;
+            if (container is null) continue;
+
+            var transform = container.TransformToAncestor(scrollViewer);
+            var point = transform.Transform(new Point(0, 0));
+
+            if (point.Y + container.ActualHeight >= 0 && point.Y <= scrollViewer.ViewportHeight)
+            {
+                if (firstVisible == 0 && i > 0) firstVisible = i;
+                lastVisible = i;
+            }
+            else if (lastVisible > 0)
+            {
+                break;
+            }
+        }
+
+        ViewModel.RequestThumbnailsForVisibleRange(firstVisible, lastVisible);
+    }
+
+    private static ScrollViewer? FindScrollViewer(DependencyObject dep)
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(dep); i++)
+        {
+            var child = VisualTreeHelper.GetChild(dep, i);
+            if (child is ScrollViewer sv) return sv;
+            var result = FindScrollViewer(child);
+            if (result is not null) return result;
+        }
+        return null;
+    }
 
     private void GalleryListBox_KeyDown(object sender, KeyEventArgs e)
     {
@@ -64,7 +109,7 @@ public partial class GalleryView : UserControl
                 break;
 
             case Key.R when Keyboard.Modifiers == ModifierKeys.None:
-                RotateSelectedImage();
+                RotateSelectedImages();
                 e.Handled = true;
                 break;
 
@@ -84,7 +129,7 @@ public partial class GalleryView : UserControl
                 break;
 
             case Key.Delete:
-                DeleteSelectedImage();
+                DeleteSelectedImages();
                 e.Handled = true;
                 break;
         }
@@ -100,38 +145,69 @@ public partial class GalleryView : UserControl
             ViewModel.EnterFullscreen();
     }
 
-    private void RotateSelectedImage()
+    private async void RotateSelectedImages()
     {
         if (ViewModel is null) return;
-        var item = ViewModel.SelectedItem;
-        if (item is null || item.IsFolder) return;
+        var items = GalleryListBox.SelectedItems.Cast<Models.ImageItem>()
+            .Where(i => !i.IsFolder).ToList();
+        if (items.Count == 0) return;
 
-        try
+        int failed = 0;
+        foreach (var item in items)
         {
-            var (newW, newH) = ImageRotationService.RotateClockwise90(item.FilePath);
-            var fi = new FileInfo(item.FilePath);
-            item.ImageWidth = newW;
-            item.ImageHeight = newH;
-            item.DateModified = fi.LastWriteTime;
-            item.FileSize = fi.Length;
-            ViewModel.RefreshThumbnail(item);
+            try
+            {
+                var (newW, newH) = await Task.Run(() => ImageRotationService.RotateClockwise90(item.FilePath));
+                var fi = new FileInfo(item.FilePath);
+                item.ImageWidth = newW;
+                item.ImageHeight = newH;
+                item.DateModified = fi.LastWriteTime;
+                item.FileSize = fi.Length;
+                ViewModel.RefreshThumbnail(item);
+            }
+            catch
+            {
+                failed++;
+            }
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Rotation failed: {ex.Message}");
-        }
+
+        if (failed > 0)
+            MessageBox.Show(Window.GetWindow(this),
+                $"Failed to rotate {failed} file{(failed != 1 ? "s" : "")}. The file may be read-only or in use.",
+                "Rotation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
-    private void DeleteSelectedImage()
+    private void DeleteSelectedImages()
     {
         if (ViewModel is null) return;
-        var item = ViewModel.SelectedItem;
-        if (item is null || item.IsFolder) return;
+        var items = GalleryListBox.SelectedItems.Cast<Models.ImageItem>()
+            .Where(i => !i.IsFolder).ToList();
+        if (items.Count == 0) return;
 
-        if (FileOperationService.MoveToRecycleBin(item.FilePath))
+        if (ViewModel.Settings.ConfirmBeforeDelete)
         {
-            int currentIdx = ViewModel.SelectedIndex;
-            ViewModel.RemoveImage(item);
+            string msg = items.Count == 1
+                ? $"Move \"{items[0].FileName}\" to the Recycle Bin?"
+                : $"Move {items.Count} files to the Recycle Bin?";
+
+            var result = MessageBox.Show(Window.GetWindow(this),
+                msg + "\n\nYou can disable this confirmation in Settings.",
+                "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result != MessageBoxResult.Yes) return;
+        }
+
+        int currentIdx = ViewModel.SelectedIndex;
+        var deleted = new List<Models.ImageItem>();
+
+        foreach (var item in items)
+        {
+            if (FileOperationService.MoveToRecycleBin(item.FilePath))
+                deleted.Add(item);
+        }
+
+        if (deleted.Count > 0)
+        {
+            ViewModel.RemoveImages(deleted);
 
             if (ViewModel.SortedImages.Count > 0)
             {

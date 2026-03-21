@@ -48,6 +48,12 @@ public sealed class SettingsService
         set => _db.SetSetting("folder_tree_visible", value ? "true" : "false");
     }
 
+    public bool ConfirmBeforeDelete
+    {
+        get => _db.GetSetting("confirm_before_delete", "true") == "true";
+        set => _db.SetSetting("confirm_before_delete", value ? "true" : "false");
+    }
+
     public (SortField Field, SortDirection Direction)? GetFolderSort(string folderPath)
     {
         var pref = _db.GetFolderSortPreference(folderPath);

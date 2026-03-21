@@ -55,6 +55,7 @@ public sealed class RatingToStarsConverter : IValueConverter
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
         if (value is not int rating || rating <= 0) return "";
+        rating = Math.Clamp(rating, 0, 5);
         return new string('★', rating) + new string('☆', 5 - rating);
     }
 

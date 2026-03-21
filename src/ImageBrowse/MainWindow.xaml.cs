@@ -54,7 +54,11 @@ public partial class MainWindow : Window
                 UpdateNotification.Visibility = Visibility.Visible;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Update check failed: {ex.Message}");
+            _vm.StatusText = "Update check failed";
+        }
     }
 
     private void Window_Closing(object sender, CancelEventArgs e)
@@ -168,7 +172,6 @@ public partial class MainWindow : Window
     {
         if (sender is not TreeViewItem item || item.Tag is not string path) return;
 
-        // Only load once
         if (item.Items.Count == 1 && item.Items[0] is TreeViewItem placeholder && placeholder.Header is "Loading...")
         {
             item.Items.Clear();
@@ -184,7 +187,24 @@ public partial class MainWindow : Window
                     item.Items.Add(CreateTreeItem(dir));
                 }
             }
-            catch { }
+            catch (UnauthorizedAccessException)
+            {
+                item.Items.Add(new TreeViewItem
+                {
+                    Header = "(Access denied)",
+                    IsEnabled = false,
+                    FontStyle = System.Windows.FontStyles.Italic
+                });
+            }
+            catch
+            {
+                item.Items.Add(new TreeViewItem
+                {
+                    Header = "(Error loading)",
+                    IsEnabled = false,
+                    FontStyle = System.Windows.FontStyles.Italic
+                });
+            }
         }
     }
 
@@ -222,22 +242,34 @@ public partial class MainWindow : Window
         }
     }
 
-    private void BackButton_Click(object sender, RoutedEventArgs e)
+    private async void BackButton_Click(object sender, RoutedEventArgs e)
     {
         if (_backHistory.Count == 0) return;
         _forwardHistory.Push(_vm.CurrentPath);
         _navigatingFromHistory = true;
-        _ = NavigateToPath(_backHistory.Pop());
-        _navigatingFromHistory = false;
+        try
+        {
+            await NavigateToPath(_backHistory.Pop());
+        }
+        finally
+        {
+            _navigatingFromHistory = false;
+        }
     }
 
-    private void ForwardButton_Click(object sender, RoutedEventArgs e)
+    private async void ForwardButton_Click(object sender, RoutedEventArgs e)
     {
         if (_forwardHistory.Count == 0) return;
         _backHistory.Push(_vm.CurrentPath);
         _navigatingFromHistory = true;
-        _ = NavigateToPath(_forwardHistory.Pop());
-        _navigatingFromHistory = false;
+        try
+        {
+            await NavigateToPath(_forwardHistory.Pop());
+        }
+        finally
+        {
+            _navigatingFromHistory = false;
+        }
     }
 
     private void UpButton_Click(object sender, RoutedEventArgs e)
@@ -353,17 +385,25 @@ public partial class MainWindow : Window
             foreach (TreeViewItem root in FolderTree.Items)
             {
                 if (root.Tag is not string rootPath) continue;
-                if (!targetPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase)) continue;
+
+                string normalizedRoot = rootPath.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                string normalizedTarget = targetPath.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+
+                if (!normalizedTarget.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase)
+                    && !targetPath.Equals(rootPath.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
+                    continue;
 
                 var current = root;
-                var remaining = targetPath[rootPath.Length..].Split(
+                var remaining = targetPath[rootPath.TrimEnd(Path.DirectorySeparatorChar).Length..].Split(
                     Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+
+                var itemsToExpand = new List<TreeViewItem>();
 
                 bool matched = true;
                 foreach (var segment in remaining)
                 {
                     current.IsExpanded = true;
-                    current.UpdateLayout();
+                    itemsToExpand.Add(current);
 
                     TreeViewItem? child = null;
                     foreach (TreeViewItem c in current.Items)
@@ -379,6 +419,9 @@ public partial class MainWindow : Window
                     if (child is null) { matched = false; break; }
                     current = child;
                 }
+
+                if (itemsToExpand.Count > 0)
+                    FolderTree.UpdateLayout();
 
                 if (matched)
                 {

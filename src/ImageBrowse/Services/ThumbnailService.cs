@@ -35,6 +35,7 @@ public sealed class ThumbnailService : IDisposable
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     public event Action<string, BitmapSource, int, int>? ThumbnailReady;
+    public event Action<string>? ThumbnailFailed;
 
     public ThumbnailService(DatabaseService db)
     {
@@ -157,7 +158,7 @@ public sealed class ThumbnailService : IDisposable
         }
         catch
         {
-            // Silently skip files that can't generate thumbnails
+            ThumbnailFailed?.Invoke(filePath);
         }
     }
 

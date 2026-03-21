@@ -67,12 +67,14 @@
                          Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" />
         </StackPanel>
 
-        <!-- Cache -->
-        <TextBlock Grid.Row="6" Text="Cache" FontWeight="SemiBold" FontSize="13"
+        <!-- Behavior -->
+        <TextBlock Grid.Row="6" Text="Behavior" FontWeight="SemiBold" FontSize="13"
                    Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,6" />
-        <StackPanel Grid.Row="7" Orientation="Horizontal" Margin="0,0,0,16" VerticalAlignment="Top">
+        <StackPanel Grid.Row="7" Margin="0,0,0,16" VerticalAlignment="Top">
+            <CheckBox x:Name="ConfirmDeleteCheck" Content="Confirm before deleting files"
+                      Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" Margin="0,0,0,8" />
             <Button Content="Clear Thumbnail Cache"
-                    Style="{DynamicResource ToolbarButton}" Padding="12,6"
+                    Style="{DynamicResource ToolbarButton}" Padding="12,6" HorizontalAlignment="Left"
                     Click="ClearCache_Click" />
         </StackPanel>
 

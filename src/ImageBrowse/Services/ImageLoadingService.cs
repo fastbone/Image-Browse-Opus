@@ -115,7 +115,7 @@ public sealed class ImageLoadingService
             if (image.ColorSpace == ColorSpace.CMYK)
                 image.ColorSpace = ColorSpace.sRGB;
 
-            var data = image.ToByteArray(MagickFormat.Png);
+            var data = image.ToByteArray(MagickFormat.Bmp);
             using var stream = new MemoryStream(data);
             var bitmap = new BitmapImage();
             bitmap.BeginInit();

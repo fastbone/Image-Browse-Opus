@@ -24,6 +24,8 @@ public partial class SettingsDialog : Window
         SelectSortFieldInCombo(_defaultSortField);
         UpdateSortDirButton();
 
+        ConfirmDeleteCheck.IsChecked = vm.Settings.ConfirmBeforeDelete;
+
         if (vm.IsDarkTheme)
             DarkRadio.IsChecked = true;
         else
@@ -83,6 +85,7 @@ public partial class SettingsDialog : Window
 
         _vm.Settings.DefaultSortField = _defaultSortField;
         _vm.Settings.DefaultSortDirection = _defaultSortDirection;
+        _vm.Settings.ConfirmBeforeDelete = ConfirmDeleteCheck.IsChecked == true;
 
         bool isDark = DarkRadio.IsChecked == true;
         _vm.IsDarkTheme = isDark;

@@ -57,6 +57,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _currentSortDirection = Settings.DefaultSortDirection;
 
         _thumbnailService.ThumbnailReady += OnThumbnailReady;
+        _thumbnailService.ThumbnailFailed += OnThumbnailFailed;
         _folderThumbnailService.FolderThumbnailReady += OnFolderThumbnailReady;
     }
 
@@ -107,7 +108,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
                     .Select(d =>
                     {
                         ct.ThrowIfCancellationRequested();
-                        int imgCount = ImageLoadingService.GetSupportedFiles(d.FullName).Take(100).Count();
                         int subfolderCount = 0;
                         try { subfolderCount = Directory.GetDirectories(d.FullName).Length; } catch { }
                         return new ImageItem
@@ -119,7 +119,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                             DateModified = d.LastWriteTime,
                             DateCreated = d.CreationTime,
                             IsFolder = true,
-                            FolderImageCount = imgCount,
+                            FolderImageCount = 0,
                             FolderSubfolderCount = subfolderCount
                         };
                     })
@@ -177,38 +177,22 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 ? $"{folderCount:N0} folder{(folderCount != 1 ? "s" : "")}, {imageCount:N0} image{(imageCount != 1 ? "s" : "")}"
                 : $"{imageCount:N0} image{(imageCount != 1 ? "s" : "")}";
 
-            foreach (var item in SortedImages)
-            {
-                if (ct.IsCancellationRequested) break;
-                if (item.IsParentFolder) continue;
+            RequestThumbnailsForRange(0, Math.Min(SortedImages.Count, GetVisiblePageSize() * 2));
 
-                if (item.IsFolder)
+            _ = Task.Run(() =>
+            {
+                foreach (var folder in SortedImages.Where(i => i.IsFolder && !i.IsParentFolder).ToList())
                 {
-                    var cached = _folderThumbnailService.GetCachedThumbnail(item.FilePath, item.DateModified);
-                    if (cached is not null)
+                    if (ct.IsCancellationRequested) break;
+                    try
                     {
-                        item.Thumbnail = cached;
+                        int count = ImageLoadingService.GetSupportedFiles(folder.FilePath).Take(100).Count();
+                        if (count != folder.FolderImageCount)
+                            Application.Current?.Dispatcher.BeginInvoke(() => folder.FolderImageCount = count);
                     }
-                    else
-                    {
-                        item.IsThumbnailLoading = true;
-                        _folderThumbnailService.RequestThumbnail(item.FilePath, item.DateModified);
-                    }
+                    catch { }
                 }
-                else
-                {
-                    var cached = _thumbnailService.GetCachedThumbnail(item.FilePath, item.DateModified);
-                    if (cached is not null)
-                    {
-                        item.Thumbnail = cached;
-                    }
-                    else
-                    {
-                        item.IsThumbnailLoading = true;
-                        _thumbnailService.RequestThumbnail(item.FilePath, item.DateModified, item.FileSize);
-                    }
-                }
-            }
+            }, ct);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -532,6 +516,59 @@ public partial class MainViewModel : ObservableObject, IDisposable
         return _imageLoadingService.LoadFullImage(filePath, maxDimension);
     }
 
+    private int GetVisiblePageSize()
+    {
+        int thumbTotal = ThumbnailSize + 16;
+        if (thumbTotal <= 0) return 50;
+        int cols = Math.Max(1, 1200 / thumbTotal);
+        int rows = Math.Max(1, 800 / thumbTotal);
+        return cols * rows;
+    }
+
+    public void RequestThumbnailsForVisibleRange(int firstVisible, int lastVisible)
+    {
+        int pageSize = GetVisiblePageSize();
+        int start = Math.Max(0, firstVisible - pageSize);
+        int end = Math.Min(SortedImages.Count, lastVisible + pageSize + 1);
+        RequestThumbnailsForRange(start, end);
+    }
+
+    private void RequestThumbnailsForRange(int start, int end)
+    {
+        for (int i = start; i < end && i < SortedImages.Count; i++)
+        {
+            var item = SortedImages[i];
+            if (item.IsParentFolder || item.Thumbnail is not null) continue;
+
+            if (item.IsFolder)
+            {
+                var cached = _folderThumbnailService.GetCachedThumbnail(item.FilePath, item.DateModified);
+                if (cached is not null)
+                {
+                    item.Thumbnail = cached;
+                }
+                else if (!item.IsThumbnailLoading)
+                {
+                    item.IsThumbnailLoading = true;
+                    _folderThumbnailService.RequestThumbnail(item.FilePath, item.DateModified);
+                }
+            }
+            else
+            {
+                var cached = _thumbnailService.GetCachedThumbnail(item.FilePath, item.DateModified);
+                if (cached is not null)
+                {
+                    item.Thumbnail = cached;
+                }
+                else if (!item.IsThumbnailLoading)
+                {
+                    item.IsThumbnailLoading = true;
+                    _thumbnailService.RequestThumbnail(item.FilePath, item.DateModified, item.FileSize);
+                }
+            }
+        }
+    }
+
     private void OnThumbnailReady(string filePath, System.Windows.Media.Imaging.BitmapSource thumbnail, int width, int height)
     {
         Application.Current?.Dispatcher.BeginInvoke(() =>
@@ -544,6 +581,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 if (item.ImageWidth == 0 && width > 0) item.ImageWidth = width;
                 if (item.ImageHeight == 0 && height > 0) item.ImageHeight = height;
             }
+        });
+    }
+
+    private void OnThumbnailFailed(string filePath)
+    {
+        Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            var item = SortedImages.FirstOrDefault(i => i.FilePath == filePath);
+            if (item is not null)
+                item.IsThumbnailLoading = false;
         });
     }
 
@@ -560,11 +607,28 @@ public partial class MainViewModel : ObservableObject, IDisposable
         });
     }
 
+    public void RemoveImages(IList<ImageItem> items)
+    {
+        foreach (var item in items)
+        {
+            _db.DeleteThumbnail(item.FilePath);
+            _allImages.Remove(item);
+            SortedImages.Remove(item);
+        }
+
+        int imageCount = _allImages.Count(i => !i.IsFolder);
+        int folderCount = _allImages.Count(i => i.IsFolder);
+        StatusText = folderCount > 0
+            ? $"{folderCount:N0} folder{(folderCount != 1 ? "s" : "")}, {imageCount:N0} image{(imageCount != 1 ? "s" : "")}"
+            : $"{imageCount:N0} image{(imageCount != 1 ? "s" : "")}";
+    }
+
     public void Dispose()
     {
         _loadCts?.Cancel();
         _loadCts?.Dispose();
         _thumbnailService.ThumbnailReady -= OnThumbnailReady;
+        _thumbnailService.ThumbnailFailed -= OnThumbnailFailed;
         _thumbnailService.Dispose();
         _folderThumbnailService.FolderThumbnailReady -= OnFolderThumbnailReady;
         _folderThumbnailService.Dispose();

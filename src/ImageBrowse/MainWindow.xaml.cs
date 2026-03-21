@@ -7,6 +7,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
@@ -376,31 +377,31 @@ public partial class MainWindow : Window
         foreach (var drive in DriveInfo.GetDrives())
         {
             if (!drive.IsReady) continue;
-            var item = CreateTreeItem(drive.RootDirectory);
+            var item = CreateTreeItem(drive.RootDirectory, icon: "\uEDA2");
             FolderTree.Items.Add(item);
         }
 
-        AddSpecialFolder("Pictures", Environment.SpecialFolder.MyPictures);
-        AddSpecialFolder("Desktop", Environment.SpecialFolder.Desktop);
-        AddSpecialFolder("Documents", Environment.SpecialFolder.MyDocuments);
-        AddSpecialFolder("Downloads", GetDownloadsPath());
+        AddSpecialFolder("Pictures", Environment.SpecialFolder.MyPictures, "\uEB9F");
+        AddSpecialFolder("Desktop", Environment.SpecialFolder.Desktop, "\uE7F4");
+        AddSpecialFolder("Documents", Environment.SpecialFolder.MyDocuments, "\uE8A5");
+        AddSpecialFolder("Downloads", GetDownloadsPath(), "\uE896");
     }
 
-    private void AddSpecialFolder(string label, Environment.SpecialFolder folder)
+    private void AddSpecialFolder(string label, Environment.SpecialFolder folder, string icon)
     {
         var path = Environment.GetFolderPath(folder);
         if (Directory.Exists(path))
         {
-            var item = CreateTreeItem(new DirectoryInfo(path), label);
+            var item = CreateTreeItem(new DirectoryInfo(path), label, icon);
             FolderTree.Items.Insert(0, item);
         }
     }
 
-    private void AddSpecialFolder(string label, string? path)
+    private void AddSpecialFolder(string label, string? path, string icon)
     {
         if (path is not null && Directory.Exists(path))
         {
-            var item = CreateTreeItem(new DirectoryInfo(path), label);
+            var item = CreateTreeItem(new DirectoryInfo(path), label, icon);
             FolderTree.Items.Insert(0, item);
         }
     }
@@ -410,20 +411,40 @@ public partial class MainWindow : Window
         return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
     }
 
-    private TreeViewItem CreateTreeItem(DirectoryInfo dir, string? displayName = null)
+    private TreeViewItem CreateTreeItem(DirectoryInfo dir, string? displayName = null, string icon = "\uED41")
     {
         var item = new TreeViewItem
         {
-            Header = displayName ?? dir.Name,
+            Header = CreateTreeHeader(icon, displayName ?? dir.Name),
             Tag = dir.FullName,
             FontSize = 13
         };
 
-        // Lazy load placeholder
         item.Items.Add(new TreeViewItem { Header = "Loading..." });
         item.Expanded += TreeItem_Expanded;
 
         return item;
+    }
+
+    private StackPanel CreateTreeHeader(string icon, string label)
+    {
+        var panel = new StackPanel { Orientation = Orientation.Horizontal };
+        panel.Children.Add(new TextBlock
+        {
+            Text = icon,
+            FontFamily = (FontFamily)FindResource("IconFont"),
+            FontSize = 14,
+            Foreground = (Brush)FindResource("FgMutedBrush"),
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 8, 0),
+            Width = 18
+        });
+        panel.Children.Add(new TextBlock
+        {
+            Text = label,
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        return panel;
     }
 
     private void TreeItem_Expanded(object sender, RoutedEventArgs e)

@@ -1,6 +1,6 @@
 # Image Browse
 
-A lightweight, fast image browser for Windows built with .NET 10 and WPF.
+A lightweight, fast image and video browser for Windows built with .NET 10 and WPF.
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/download/dotnet/10.0)
@@ -10,7 +10,7 @@ A lightweight, fast image browser for Windows built with .NET 10 and WPF.
 
 ## Overview
 
-Image Browse is a Windows desktop application for browsing and viewing images. It combines a familiar folder-based navigation experience with a high-performance virtualized thumbnail gallery and a full-featured image viewer. Powered by ImageMagick through Magick.NET, it supports over 80 image formats out of the box -- from everyday JPEGs and PNGs to camera RAW files, HEIC, AVIF, JPEG XL, PSD, SVG, HDR, and many more.
+Image Browse is a Windows desktop application for browsing and viewing images and videos. It combines a familiar folder-based navigation experience with a high-performance virtualized thumbnail gallery and a full-featured media viewer. Powered by ImageMagick through Magick.NET and LibVLC for video playback, it supports over 80 image formats and 16 video formats out of the box -- from everyday JPEGs and PNGs to camera RAW files, HEIC, AVIF, JPEG XL, PSD, SVG, HDR, and many more, plus video files like MP4, MKV, and MOV.
 
 ---
 
@@ -18,7 +18,7 @@ Image Browse is a Windows desktop application for browsing and viewing images. I
 
 ### Folder Navigation
 - **Folder tree** with drives and special folders (Pictures, Desktop, Documents, Downloads)
-- **Address bar** with direct path entry
+- **Breadcrumb navigation bar** with clickable path segments and direct path editing (`Ctrl+L`)
 - **Back / Forward / Up** navigation with full history
 
 ### Thumbnail Gallery
@@ -32,7 +32,16 @@ Image Browse is a Windows desktop application for browsing and viewing images. I
 - **Zoom and pan** with mouse wheel and keyboard controls
 - **Fit to screen**, **actual size**, and arbitrary zoom levels
 - **EXIF info overlay** showing camera make, model, lens, ISO, aperture, shutter speed, focal length, and dimensions
+- **Filmstrip** thumbnail strip for quick navigation between images (toggle pin with `T`)
 - Auto-hiding cursor and position/zoom indicators
+
+### Video Playback
+- **Integrated video player** powered by LibVLC for broad codec support
+- **Playback controls**: play/pause, seek (5s or 30s jumps), volume, mute
+- **Playback speed adjustment** with `[` and `]` keys (0.25x to 4x)
+- **Video zoom** with mini-map for interactive navigation
+- **Video thumbnails** generated automatically from video content
+- Supported formats: MP4, MKV, AVI, MOV, WebM, WMV, FLV, M4V, MPG, MPEG, TS, 3GP, OGV, VOB, MTS, M2TS
 
 ### Organization
 - **Star ratings** (1-5) per image, stored persistently
@@ -43,6 +52,7 @@ Image Browse is a Windows desktop application for browsing and viewing images. I
 ### Image Operations
 - **Rotate 90 degrees clockwise** with automatic EXIF orientation handling
 - Lossless rotation for JPEG files (quality 100)
+- **Delete images** from the gallery or fullscreen viewer (with optional confirmation)
 - Thumbnail cache automatically refreshed after rotation
 
 ### Performance
@@ -53,6 +63,9 @@ Image Browse is a Windows desktop application for browsing and viewing images. I
 
 ### Appearance
 - **Dark theme** and **Light theme** with full UI coverage
+- **Transition animations** for dialogs, loading states, and UI elements (can be disabled in settings)
+- **Segmented sort controls** in the toolbar for quick sorting
+- **Shimmer loading placeholders** for smooth thumbnail loading feedback
 - Theme preference persisted across sessions
 
 ### Updates
@@ -61,9 +74,9 @@ Image Browse is a Windows desktop application for browsing and viewing images. I
 
 ---
 
-## Supported Image Formats
+## Supported Formats
 
-Image Browse supports over 80 file formats. Commonly used formats are loaded through WPF's native decoders for maximum speed; all others go through ImageMagick.
+Image Browse supports over 80 image formats and 16 video formats. Commonly used image formats are loaded through WPF's native decoders for maximum speed; other image formats go through ImageMagick. Video playback is handled by LibVLC.
 
 ### Common Raster
 `.jpg` `.jpeg` `.jfif` `.png` `.gif` `.bmp` `.tiff` `.tif` `.ico` `.cur`
@@ -86,6 +99,9 @@ Image Browse supports over 80 file formats. Commonly used formats are loaded thr
 ### Legacy / Other
 `.tga` `.dds` `.pcx` `.pbm` `.pgm` `.ppm` `.pnm` `.sgi` `.xbm` `.xpm` `.wmf` `.emf`
 
+### Video
+`.mp4` `.mkv` `.avi` `.mov` `.webm` `.wmv` `.flv` `.m4v` `.mpg` `.mpeg` `.ts` `.3gp` `.ogv` `.vob` `.mts` `.m2ts`
+
 ---
 
 ## Keyboard Shortcuts
@@ -95,7 +111,7 @@ Image Browse supports over 80 file formats. Commonly used formats are loaded thr
 | Shortcut | Action |
 |---|---|
 | `Enter` / `F11` / `F` | Enter fullscreen viewer |
-| `Escape` (press twice quickly) | Quit application |
+| `Escape` (press twice within 2s) | Quit application |
 | `Ctrl+T` | Toggle dark/light theme |
 | `Ctrl+Shift+F` | Toggle folder tree visibility |
 | `Ctrl+Plus` / `Ctrl+NumPad+` | Increase thumbnail size |
@@ -105,6 +121,7 @@ Image Browse supports over 80 file formats. Commonly used formats are loaded thr
 | `Alt+Up` | Navigate to parent folder |
 | `Ctrl+,` | Open Settings |
 | `Ctrl+Shift+P` | Open Prescan dialog |
+| `Ctrl+L` | Focus address bar for path editing |
 | `F1` | Open About dialog |
 
 ### Gallery View
@@ -118,12 +135,13 @@ Image Browse supports over 80 file formats. Commonly used formats are loaded thr
 | `Q` | Toggle tag on selected image |
 | `Home` | Jump to first image |
 | `End` | Jump to last image |
+| `Delete` | Delete selected image(s) |
 
-### Fullscreen Viewer
+### Fullscreen Viewer (Image)
 
 | Shortcut | Action |
 |---|---|
-| `Escape` | Exit fullscreen |
+| `Escape` / `Enter` | Exit fullscreen |
 | `Right` / `Space` / `PageDown` | Next image |
 | `Left` / `Backspace` / `PageUp` | Previous image |
 | `Home` | First image |
@@ -133,15 +151,39 @@ Image Browse supports over 80 file formats. Commonly used formats are loaded thr
 | `0` / `NumPad0` | Fit to screen |
 | `Ctrl+1` | Actual size (1:1 pixel mapping) |
 | `I` | Toggle EXIF info overlay |
+| `T` | Toggle filmstrip pin |
 | `R` | Rotate image 90 degrees clockwise |
 | `Q` | Toggle tag |
+| `Delete` | Delete current image |
+| `1`-`5` / `NumPad1`-`NumPad5` | Set rating |
+
+### Fullscreen Viewer (Video)
+
+When a video is playing, these shortcuts apply instead:
+
+| Shortcut | Action |
+|---|---|
+| `Escape` / `Enter` | Exit fullscreen |
+| `Space` | Toggle play/pause |
+| `Left` | Seek backward 5 seconds |
+| `Shift+Left` | Seek backward 30 seconds |
+| `Right` | Seek forward 5 seconds |
+| `Shift+Right` | Seek forward 30 seconds |
+| `Up` | Volume up |
+| `Down` | Volume down |
+| `M` | Toggle mute |
+| `Z` | Toggle video zoom |
+| `N` | Next file |
+| `P` | Previous file |
+| `[` | Decrease playback speed |
+| `]` | Increase playback speed |
 | `1`-`5` / `NumPad1`-`NumPad5` | Set rating |
 
 ### Fullscreen Mouse Controls
 
 | Input | Action |
 |---|---|
-| Mouse wheel | Zoom in/out |
+| Mouse wheel | Zoom in/out (images) |
 | XButton1 (back) | Previous image |
 | XButton2 (forward) | Next image |
 
@@ -200,6 +242,8 @@ The compiled output is placed in `src/ImageBrowse/bin/Release/net10.0-windows/`.
 | Startup folder | The folder opened when the application starts (defaults to My Pictures) |
 | Default sort | The sort field and direction applied to folders without a custom sort preference |
 | Theme | Switch between dark and light themes |
+| Enable animations | Toggle transition animations for dialogs, loading states, and UI elements |
+| Confirm before delete | Show a confirmation dialog before deleting files |
 | Clear thumbnail cache | Removes all cached thumbnails from the database |
 
 ### Thumbnail Size
@@ -244,6 +288,7 @@ src/ImageBrowse/
     DatabaseService.cs    SQLite database access (cache, settings, ratings)
     ThumbnailService.cs   Thumbnail generation and caching
     FolderThumbnailService.cs  Composite folder preview generation
+    VideoThumbnailService.cs   Video thumbnail extraction via LibVLC
     ImageLoadingService.cs     Full image loading (WPF native + Magick.NET)
     MetadataService.cs    EXIF/metadata extraction via MetadataExtractor
     ExifOrientationService.cs  EXIF orientation correction
@@ -255,6 +300,8 @@ src/ImageBrowse/
   Helpers/
     Converters.cs         WPF value converters
     NaturalSortComparer.cs  Natural string sorting (e.g. "img2" before "img10")
+    DialogAnimationHelper.cs  Slide/fade dialog animations
+    RatingStarsControl.cs     Interactive star rating control
   Themes/
     DarkTheme.xaml        Dark color scheme and control styles
     LightTheme.xaml       Light color scheme and control styles
@@ -271,6 +318,9 @@ Image Browse is built on the following open-source libraries. All use licenses c
 | Library | Version | License | Project |
 |---|---|---|---|
 | CommunityToolkit.Mvvm | 8.4.1 | MIT | [GitHub](https://github.com/CommunityToolkit/dotnet) |
+| LibVLCSharp | 3.9.6 | LGPL-2.1+ | [GitHub](https://github.com/videolan/libvlcsharp) |
+| LibVLCSharp.WPF | 3.9.6 | LGPL-2.1+ | [GitHub](https://github.com/videolan/libvlcsharp) |
+| VideoLAN.LibVLC.Windows | 3.0.23 | LGPL-2.1+ / GPL-2.0+ | [GitHub](https://github.com/videolan/vlc) |
 | Magick.NET-Q8-AnyCPU | 14.11.0 | Apache-2.0 | [GitHub](https://github.com/dlemstra/Magick.NET) |
 | MetadataExtractor | 2.9.2 | Apache-2.0 | [GitHub](https://github.com/drewnoakes/metadata-extractor-dotnet) |
 | Microsoft.Data.Sqlite | 10.0.5 | Apache-2.0 | [GitHub](https://github.com/dotnet/efcore) |

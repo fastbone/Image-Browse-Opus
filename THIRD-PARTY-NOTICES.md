@@ -11,14 +11,16 @@ GNU General Public License v3.0 under which Image Browse is distributed.
 ## Table of Contents
 
 1. [CommunityToolkit.Mvvm](#communitytoolkitmvvm)
-2. [Magick.NET (ImageMagick)](#magicknet-imagemagick)
-3. [MetadataExtractor](#metadataextractor)
-4. [Microsoft.Data.Sqlite](#microsoftdatasqlite)
-5. [Velopack](#velopack)
-6. [VirtualizingWrapPanel](#virtualizingwrappanel)
-7. [XmpCore](#xmpcore)
-8. [SQLitePCLRaw](#sqlitepclraw)
-9. [NuGet.Versioning](#nugetversioning)
+2. [LibVLCSharp / LibVLCSharp.WPF](#libvlcsharp--libvlcsharpwpf)
+3. [VideoLAN.LibVLC.Windows](#videolanliblvcwindows)
+4. [Magick.NET (ImageMagick)](#magicknet-imagemagick)
+5. [MetadataExtractor](#metadataextractor)
+6. [Microsoft.Data.Sqlite](#microsoftdatasqlite)
+7. [Velopack](#velopack)
+8. [VirtualizingWrapPanel](#virtualizingwrappanel)
+9. [XmpCore](#xmpcore)
+10. [SQLitePCLRaw](#sqlitepclraw)
+11. [NuGet.Versioning](#nugetversioning)
 
 ---
 
@@ -53,6 +55,72 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+
+---
+
+## LibVLCSharp / LibVLCSharp.WPF
+
+- **Version**: 3.9.6
+- **Authors**: VideoLAN
+- **Project URL**: https://github.com/videolan/libvlcsharp
+- **License**: LGPL-2.1-or-later
+
+```
+                  GNU LESSER GENERAL PUBLIC LICENSE
+                       Version 2.1, February 1999
+
+ Copyright (C) 1991, 1999 Free Software Foundation, Inc.
+ 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
+
+[This is the first released version of the Lesser GPL.  It also counts
+ as the successor of the GNU Library Public License, version 2, hence
+ the version number 2.1.]
+
+LibVLCSharp is licensed under the LGPL-2.1-or-later. You may use, modify,
+and redistribute it under the terms of the GNU Lesser General Public License
+as published by the Free Software Foundation, either version 2.1 of the
+License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this library. If not, see <https://www.gnu.org/licenses/>.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+```
+
+---
+
+## VideoLAN.LibVLC.Windows
+
+- **Version**: 3.0.23
+- **Authors**: VideoLAN
+- **Project URL**: https://github.com/videolan/vlc
+- **License**: LGPL-2.1-or-later / GPL-2.0-or-later
+
+```
+VideoLAN.LibVLC.Windows contains the pre-built native LibVLC libraries for
+Windows. LibVLC is part of the VLC media player project.
+
+Most of LibVLC is licensed under the GNU Lesser General Public License
+version 2.1 or later (LGPL-2.1+). Some modules and plugins within VLC are
+licensed under the GNU General Public License version 2.0 or later (GPL-2.0+).
+
+Since Image Browse is distributed under GPL-3.0, all LGPL-2.1+ and GPL-2.0+
+components are compatible — the "or later" clause allows use under GPL-3.0.
+
+Full LGPL-2.1 text: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+Full GPL-2.0 text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+
+For details on which VLC modules use which license, see:
+https://code.videolan.org/videolan/vlc/-/blob/master/COPYING
 ```
 
 ---
@@ -515,11 +583,13 @@ for the full license text.
 
 ## License Compatibility
 
-All third-party components listed above use permissive open-source licenses
-(MIT, Apache-2.0, BSD-3-Clause, or public domain) that are compatible with
-the GNU General Public License v3.0 under which Image Browse is distributed.
+All third-party components listed above use open-source licenses that are
+compatible with the GNU General Public License v3.0 under which Image Browse
+is distributed.
 
 - **MIT** -> GPL-3.0 compatible (permissive, no copyleft conflict)
 - **Apache-2.0** -> GPL-3.0 compatible (per FSF compatibility guidance)
 - **BSD-3-Clause** -> GPL-3.0 compatible (permissive, no copyleft conflict)
+- **LGPL-2.1+** -> GPL-3.0 compatible (the "or later" clause permits use under LGPL-3.0, which is an additional permission set on top of GPL-3.0)
+- **GPL-2.0+** -> GPL-3.0 compatible (the "or later" clause permits use under GPL-3.0)
 - **Public domain** -> GPL-3.0 compatible (no restrictions)

@@ -112,3 +112,6 @@ PublishScripts/
 StyleCopReport.xml
 ~$*
 *~
+
+## Personal docs (not for version control)
+SETUP-GUIDE.md

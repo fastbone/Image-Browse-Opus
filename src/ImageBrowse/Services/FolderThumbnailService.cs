@@ -76,7 +76,8 @@ public sealed class FolderThumbnailService : IDisposable
     {
         try
         {
-            var imagePaths = ImageLoadingService.GetSupportedFiles(folderPath).Take(4).ToList();
+            var imagePaths = ImageLoadingService.GetSupportedFiles(folderPath)
+                .Where(f => !ImageLoadingService.IsVideoFile(f)).Take(4).ToList();
 
             BitmapSource? composite = imagePaths.Count switch
             {

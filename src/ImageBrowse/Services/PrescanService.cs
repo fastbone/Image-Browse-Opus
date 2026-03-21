@@ -134,6 +134,8 @@ public sealed class PrescanService
     {
         try
         {
+            if (ImageLoadingService.IsVideoFile(filePath)) return false;
+
             var fi = new FileInfo(filePath);
             if (!fi.Exists) return false;
 

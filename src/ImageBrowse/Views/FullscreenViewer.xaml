@@ -58,7 +58,7 @@
 
         <!-- Video player (hidden when viewing images) -->
         <vlc:VideoView x:Name="VideoView" Visibility="Collapsed" Background="Black">
-            <Grid Background="Transparent" MouseMove="VideoOverlay_MouseMove">
+            <Grid Background="Transparent">
                 <!-- Video control bar (bottom, auto-hides) -->
                 <Border x:Name="VideoControlBar" Opacity="0" IsHitTestVisible="True"
                         Background="#CC000000" VerticalAlignment="Bottom"

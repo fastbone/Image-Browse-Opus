@@ -53,6 +53,7 @@ public partial class FullscreenViewer : Window
     private bool _isSeeking;
     private readonly DispatcherTimer _videoPositionTimer;
     private readonly DispatcherTimer _controlBarFadeTimer;
+    private readonly DispatcherTimer _videoMousePollTimer;
     private bool _controlBarVisible;
 
     private double _videoZoomLevel = 1.0;
@@ -87,6 +88,20 @@ public partial class FullscreenViewer : Window
         {
             HideVideoControlBar();
             _controlBarFadeTimer.Stop();
+        };
+
+        _videoMousePollTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        _videoMousePollTimer.Tick += (_, _) =>
+        {
+            var pos = Mouse.GetPosition(this);
+            if (Math.Abs(pos.X - _lastMousePos.X) > 3 || Math.Abs(pos.Y - _lastMousePos.Y) > 3)
+            {
+                Cursor = Cursors.Arrow;
+                _cursorTimer.Stop();
+                _cursorTimer.Start();
+                ShowVideoControlBar();
+            }
+            _lastMousePos = pos;
         };
 
         _positionFadeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
@@ -234,6 +249,7 @@ public partial class FullscreenViewer : Window
         FilmstripPanel.IsHitTestVisible = false;
         ResetVideoZoom();
         ResetVideoViewSize();
+        _videoMousePollTimer.Start();
 
         try
         {
@@ -264,6 +280,7 @@ public partial class FullscreenViewer : Window
     {
         if (!_isVideoActive) return;
         _isVideoActive = false;
+        _videoMousePollTimer.Stop();
         ResetVideoZoom();
         VideoView.Visibility = Visibility.Collapsed;
         ImageScroller.Visibility = Visibility.Visible;
@@ -1193,19 +1210,6 @@ public partial class FullscreenViewer : Window
         _lastMousePos = pos;
     }
 
-    private void VideoOverlay_MouseMove(object sender, MouseEventArgs e)
-    {
-        var pos = e.GetPosition(this);
-        if (Math.Abs(pos.X - _lastMousePos.X) > 3 || Math.Abs(pos.Y - _lastMousePos.Y) > 3)
-        {
-            Cursor = Cursors.Arrow;
-            _cursorTimer.Stop();
-            _cursorTimer.Start();
-            ShowVideoControlBar();
-        }
-        _lastMousePos = pos;
-    }
-
     private void Window_MouseDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ChangedButton == MouseButton.XButton1)
@@ -1487,6 +1491,7 @@ public partial class FullscreenViewer : Window
         _filmstripFadeTimer.Stop();
         _videoPositionTimer.Stop();
         _controlBarFadeTimer.Stop();
+        _videoMousePollTimer.Stop();
         _loadCts.Cancel();
         _loadCts.Dispose();
 

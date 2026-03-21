@@ -228,6 +228,8 @@ public partial class FullscreenViewer : Window
         VideoView.Visibility = Visibility.Visible;
         NavLeft.Visibility = Visibility.Collapsed;
         NavRight.Visibility = Visibility.Collapsed;
+        FilmstripPanel.IsHitTestVisible = false;
+        ResetVideoZoom();
 
         try
         {
@@ -263,6 +265,7 @@ public partial class FullscreenViewer : Window
         ImageScroller.Visibility = Visibility.Visible;
         NavLeft.Visibility = Visibility.Visible;
         NavRight.Visibility = Visibility.Visible;
+        FilmstripPanel.IsHitTestVisible = true;
         HideVideoControlBar();
     }
 

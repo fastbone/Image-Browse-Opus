@@ -468,7 +468,7 @@ public partial class MainWindow : Window
 
     private void FocusGallery()
     {
-        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, Gallery.FocusGallery);
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, Gallery.FocusGallery);
     }
 
     private void FolderTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -480,7 +480,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task NavigateToPath(string path)
+    private async Task NavigateToPath(string path, string? selectFolderName = null)
     {
         if (!Directory.Exists(path)) return;
 
@@ -490,7 +490,7 @@ public partial class MainWindow : Window
             if (!_navigatingFromHistory) _forwardHistory.Clear();
         }
 
-        await _vm.NavigateToFolder(path);
+        await _vm.NavigateToFolder(path, selectFolderName);
         SyncFolderTree(path);
     }
 
@@ -549,9 +549,10 @@ public partial class MainWindow : Window
 
     private void UpButton_Click(object sender, RoutedEventArgs e)
     {
+        var folderName = Path.GetFileName(_vm.CurrentPath);
         var parent = Directory.GetParent(_vm.CurrentPath);
         if (parent is not null)
-            _ = NavigateToPath(parent.FullName);
+            _ = NavigateToPath(parent.FullName, folderName);
     }
 
     private void SortSegment_Click(object sender, RoutedEventArgs e)
@@ -572,6 +573,7 @@ public partial class MainWindow : Window
     private void OpenFullscreenViewer()
     {
         var viewer = new FullscreenViewer(_vm);
+        viewer.Owner = this;
         viewer.Closed += (_, _) => _vm.ExitFullscreen();
         viewer.ShowDialog();
         FocusGallery();

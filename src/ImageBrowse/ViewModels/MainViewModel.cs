@@ -85,7 +85,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _folderThumbnailService.FolderThumbnailReady += OnFolderThumbnailReady;
     }
 
-    public async Task NavigateToFolder(string path)
+    public async Task NavigateToFolder(string path, string? selectFolderName = null)
     {
         if (!Directory.Exists(path)) return;
 
@@ -195,6 +195,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
             if (ct.IsCancellationRequested) return;
 
             ApplySortAndPopulate();
+
+            if (selectFolderName is not null)
+            {
+                var target = SortedImages.FirstOrDefault(i =>
+                    i.IsFolder && !i.IsParentFolder &&
+                    string.Equals(i.FileName, selectFolderName, StringComparison.OrdinalIgnoreCase));
+                if (target is not null)
+                {
+                    SelectedIndex = SortedImages.IndexOf(target);
+                    SelectedItem = target;
+                }
+            }
+            else if (SortedImages.Count > 0)
+            {
+                int startIdx = _parentFolderItem is not null && SortedImages.Count > 1 ? 1 : 0;
+                SelectedIndex = startIdx;
+                SelectedItem = SortedImages[startIdx];
+            }
 
             int imageCount = _allImages.Count(i => !i.IsFolder && !i.IsVideo);
             int videoCount = _allImages.Count(i => i.IsVideo);

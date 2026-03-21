@@ -39,6 +39,8 @@ public partial class GalleryView : UserControl
                 {
                     if (e.PropertyName == nameof(MainViewModel.IsLoading))
                         UpdateEmptyState();
+                    else if (e.PropertyName == nameof(MainViewModel.SelectedIndex))
+                        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, FocusSelectedItem);
                 };
             }
         };
@@ -117,6 +119,17 @@ public partial class GalleryView : UserControl
     public void FocusGallery()
     {
         Keyboard.Focus(GalleryListBox);
+        FocusSelectedItem();
+    }
+
+    private void FocusSelectedItem()
+    {
+        if (ViewModel is null || ViewModel.SelectedIndex < 0) return;
+        if (GalleryListBox.ItemContainerGenerator.ContainerFromIndex(ViewModel.SelectedIndex)
+            is ListBoxItem container)
+        {
+            container.Focus();
+        }
     }
 
     private void GalleryListBox_KeyDown(object sender, KeyEventArgs e)
@@ -128,7 +141,12 @@ public partial class GalleryView : UserControl
             case Key.Enter:
             case Key.F:
                 if (ViewModel.SelectedItem?.IsFolder == true)
-                    _ = ViewModel.NavigateToFolder(ViewModel.SelectedItem.FilePath);
+                {
+                    string? returnTo = ViewModel.SelectedItem.IsParentFolder
+                        ? Path.GetFileName(ViewModel.CurrentPath)
+                        : null;
+                    _ = ViewModel.NavigateToFolder(ViewModel.SelectedItem.FilePath, returnTo);
+                }
                 else
                     ViewModel.EnterFullscreen();
                 e.Handled = true;
@@ -198,7 +216,12 @@ public partial class GalleryView : UserControl
         if (ViewModel?.SelectedItem is null) return;
 
         if (ViewModel.SelectedItem.IsFolder)
-            _ = ViewModel.NavigateToFolder(ViewModel.SelectedItem.FilePath);
+        {
+            string? returnTo = ViewModel.SelectedItem.IsParentFolder
+                ? Path.GetFileName(ViewModel.CurrentPath)
+                : null;
+            _ = ViewModel.NavigateToFolder(ViewModel.SelectedItem.FilePath, returnTo);
+        }
         else
             ViewModel.EnterFullscreen();
     }
@@ -279,8 +302,9 @@ public partial class GalleryView : UserControl
     private void NavigateUp()
     {
         if (ViewModel is null || string.IsNullOrEmpty(ViewModel.CurrentPath)) return;
+        var folderName = Path.GetFileName(ViewModel.CurrentPath);
         var parent = System.IO.Directory.GetParent(ViewModel.CurrentPath);
         if (parent is not null)
-            _ = ViewModel.NavigateToFolder(parent.FullName);
+            _ = ViewModel.NavigateToFolder(parent.FullName, folderName);
     }
 }

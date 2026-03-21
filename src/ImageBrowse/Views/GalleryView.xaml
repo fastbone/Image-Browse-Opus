@@ -68,6 +68,7 @@
              VirtualizingPanel.CacheLengthUnit="Page"
              HorizontalContentAlignment="Center"
              VerticalContentAlignment="Top"
+             KeyboardNavigation.DirectionalNavigation="Contained"
              KeyDown="GalleryListBox_KeyDown"
              MouseDoubleClick="GalleryListBox_MouseDoubleClick">
 
@@ -80,6 +81,7 @@
 
         <ListBox.ItemContainerStyle>
             <Style TargetType="ListBoxItem">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="Margin" Value="4" />
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="HorizontalContentAlignment" Value="Center" />

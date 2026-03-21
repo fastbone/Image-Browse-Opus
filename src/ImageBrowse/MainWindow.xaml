@@ -237,7 +237,8 @@
             <!-- Splitter -->
             <GridSplitter x:Name="FolderTreeSplitter" Grid.Column="1" Width="4"
                           Background="{DynamicResource BorderBrush}"
-                          HorizontalAlignment="Center" VerticalAlignment="Stretch" />
+                          HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                          Focusable="False" />
 
             <!-- Gallery -->
             <views:GalleryView x:Name="Gallery" Grid.Column="2" DataContext="{Binding}" />

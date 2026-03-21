@@ -10,11 +10,40 @@
         <helpers:BoolToVisibilityConverter x:Key="BoolToVis" />
         <helpers:RatingToStarsConverter x:Key="RatingToStars" />
 
-        <!-- Shimmer animation for loading placeholders -->
-        <Storyboard x:Key="ShimmerAnimation" RepeatBehavior="Forever">
-            <DoubleAnimation Storyboard.TargetProperty="(Rectangle.Fill).(LinearGradientBrush.GradientStops)[1].Offset"
-                             From="-0.5" To="1.5" Duration="0:0:1.2" />
-        </Storyboard>
+        <!-- Shimmer style for loading placeholders -->
+        <Style x:Key="ShimmerRectangle" TargetType="Rectangle">
+            <Setter Property="RadiusX" Value="4" />
+            <Setter Property="RadiusY" Value="4" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="Margin" Value="12" />
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Setter Property="Fill">
+                <Setter.Value>
+                    <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                        <GradientStop x:Name="g0" Color="{DynamicResource BgHover}" Offset="0" />
+                        <GradientStop x:Name="g1" Color="{DynamicResource BgTertiary}" Offset="0.5" />
+                        <GradientStop x:Name="g2" Color="{DynamicResource BgHover}" Offset="1" />
+                    </LinearGradientBrush>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsThumbnailLoading}" Value="True">
+                    <Setter Property="Visibility" Value="Visible" />
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard x:Name="ShimmerStory">
+                            <Storyboard RepeatBehavior="Forever">
+                                <DoubleAnimation Storyboard.TargetProperty="(Rectangle.Fill).(LinearGradientBrush.GradientStops)[1].Offset"
+                                                 From="-0.5" To="1.5" Duration="0:0:1.2" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions>
+                        <StopStoryboard BeginStoryboardName="ShimmerStory" />
+                    </DataTrigger.ExitActions>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -48,7 +77,8 @@
              HorizontalContentAlignment="Center"
              VerticalContentAlignment="Top"
              KeyDown="GalleryListBox_KeyDown"
-             MouseDoubleClick="GalleryListBox_MouseDoubleClick">
+             MouseDoubleClick="GalleryListBox_MouseDoubleClick"
+             MouseEnter="GalleryListBox_MouseEnter">
 
         <ListBox.ItemsPanel>
             <ItemsPanelTemplate>
@@ -77,6 +107,24 @@
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard x:Name="HoverIn">
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="border"
+                                                    Storyboard.TargetProperty="Opacity"
+                                                    From="0.7" To="1" Duration="0:0:0.1" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="border"
+                                                    Storyboard.TargetProperty="Opacity"
+                                                    To="1" Duration="0:0:0.15" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
                                     <Setter TargetName="border" Property="Background"
                                             Value="{DynamicResource BgHoverBrush}" />
                                     <Setter TargetName="border" Property="BorderBrush"
@@ -149,18 +197,7 @@
                             </Image>
 
                             <!-- Shimmer loading placeholder -->
-                            <Rectangle RadiusX="4" RadiusY="4"
-                                       HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                       Margin="12"
-                                       Visibility="{Binding IsThumbnailLoading, Converter={StaticResource BoolToVis}}">
-                                <Rectangle.Fill>
-                                    <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
-                                        <GradientStop Color="{DynamicResource BgHover}" Offset="0" />
-                                        <GradientStop Color="{DynamicResource BgTertiary}" Offset="0.5" />
-                                        <GradientStop Color="{DynamicResource BgHover}" Offset="1" />
-                                    </LinearGradientBrush>
-                                </Rectangle.Fill>
-                            </Rectangle>
+                            <Rectangle Style="{StaticResource ShimmerRectangle}" />
 
                             <!-- Tag indicator -->
                             <Border Background="{DynamicResource AccentBrush}"

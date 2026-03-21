@@ -80,12 +80,14 @@
                     <StackPanel>
                         <TextBlock Text="Appearance" FontWeight="SemiBold" FontSize="13"
                                    Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,8" />
-                        <StackPanel Orientation="Horizontal">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                             <RadioButton x:Name="DarkRadio" Content="Dark" Margin="0,0,16,0"
                                          Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" />
                             <RadioButton x:Name="LightRadio" Content="Light"
                                          Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" />
                         </StackPanel>
+                        <CheckBox x:Name="EnableAnimationsCheck" Content="Enable transition animations"
+                                  Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" />
                     </StackPanel>
                 </Border>
 

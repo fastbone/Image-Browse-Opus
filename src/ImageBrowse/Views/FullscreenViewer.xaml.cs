@@ -101,7 +101,9 @@ public partial class FullscreenViewer : Window
             newImage = image;
         }
 
-        if (crossfade && DisplayImage.Source is not null && newImage is not null)
+        bool animate = crossfade && _vm.Settings.EnableAnimations;
+
+        if (animate && DisplayImage.Source is not null && newImage is not null)
         {
             BackImage.Source = DisplayImage.Source;
             BackImageScale.ScaleX = ImageScale.ScaleX;
@@ -122,6 +124,7 @@ public partial class FullscreenViewer : Window
         }
         else
         {
+            DisplayImage.BeginAnimation(OpacityProperty, null);
             DisplayImage.Source = newImage;
             DisplayImage.Opacity = 1;
         }
@@ -390,6 +393,7 @@ public partial class FullscreenViewer : Window
         switch (e.Key)
         {
             case Key.Escape:
+            case Key.Enter:
                 Close();
                 break;
 
@@ -603,16 +607,32 @@ public partial class FullscreenViewer : Window
         }
     }
 
-    private static void FadeIn(UIElement element)
+    private void FadeIn(UIElement element)
     {
-        var animation = new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(200));
-        element.BeginAnimation(OpacityProperty, animation);
+        if (_vm.Settings.EnableAnimations)
+        {
+            var animation = new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(200));
+            element.BeginAnimation(OpacityProperty, animation);
+        }
+        else
+        {
+            element.BeginAnimation(OpacityProperty, null);
+            element.Opacity = 1;
+        }
     }
 
-    private static void FadeOut(UIElement element)
+    private void FadeOut(UIElement element)
     {
-        var animation = new DoubleAnimation(0.0, TimeSpan.FromMilliseconds(300));
-        element.BeginAnimation(OpacityProperty, animation);
+        if (_vm.Settings.EnableAnimations)
+        {
+            var animation = new DoubleAnimation(0.0, TimeSpan.FromMilliseconds(300));
+            element.BeginAnimation(OpacityProperty, animation);
+        }
+        else
+        {
+            element.BeginAnimation(OpacityProperty, null);
+            element.Opacity = 0;
+        }
     }
 
     protected override void OnClosed(EventArgs e)

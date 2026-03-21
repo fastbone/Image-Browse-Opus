@@ -139,9 +139,17 @@ public partial class MainWindow : Window
 
     private void HandleLoadingChanged(bool isLoading)
     {
+        bool animate = _vm.Settings.EnableAnimations;
+
         if (isLoading)
         {
             _loadingDelayTimer?.Stop();
+            if (!animate)
+            {
+                LoadingOverlay.Opacity = 1;
+                LoadingOverlay.Visibility = Visibility.Visible;
+                return;
+            }
             _loadingDelayTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
             _loadingDelayTimer.Tick += (_, _) =>
             {
@@ -160,6 +168,13 @@ public partial class MainWindow : Window
             _loadingDelayTimer?.Stop();
             if (LoadingOverlay.Visibility == Visibility.Visible)
             {
+                if (!animate)
+                {
+                    LoadingOverlay.BeginAnimation(OpacityProperty, null);
+                    LoadingOverlay.Opacity = 0;
+                    LoadingOverlay.Visibility = Visibility.Collapsed;
+                    return;
+                }
                 var fadeOut = new DoubleAnimation(LoadingOverlay.Opacity, 0, TimeSpan.FromMilliseconds(150));
                 fadeOut.Completed += (_, _) => LoadingOverlay.Visibility = Visibility.Collapsed;
                 LoadingOverlay.BeginAnimation(OpacityProperty, fadeOut);
@@ -170,15 +185,33 @@ public partial class MainWindow : Window
     private void ShowEscapeToast()
     {
         _escapeToastTimer?.Stop();
-        var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(150));
-        EscapeToast.BeginAnimation(OpacityProperty, fadeIn);
+        bool animate = _vm.Settings.EnableAnimations;
+
+        if (animate)
+        {
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(150));
+            EscapeToast.BeginAnimation(OpacityProperty, fadeIn);
+        }
+        else
+        {
+            EscapeToast.BeginAnimation(OpacityProperty, null);
+            EscapeToast.Opacity = 1;
+        }
 
         _escapeToastTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1800) };
         _escapeToastTimer.Tick += (_, _) =>
         {
             _escapeToastTimer.Stop();
-            var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(300));
-            EscapeToast.BeginAnimation(OpacityProperty, fadeOut);
+            if (animate)
+            {
+                var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(300));
+                EscapeToast.BeginAnimation(OpacityProperty, fadeOut);
+            }
+            else
+            {
+                EscapeToast.BeginAnimation(OpacityProperty, null);
+                EscapeToast.Opacity = 0;
+            }
         };
         _escapeToastTimer.Start();
     }
@@ -190,6 +223,15 @@ public partial class MainWindow : Window
 
         if (!show && from > 0)
             _folderTreeWidth = from;
+
+        if (!_vm.Settings.EnableAnimations)
+        {
+            FolderTreeColumn.Width = new GridLength(to);
+            FolderTree.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            FolderTreeSplitter.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            FolderTreeColumn.MinWidth = show ? FolderTreeMinWidth : 0;
+            return;
+        }
 
         if (show)
         {
@@ -243,6 +285,28 @@ public partial class MainWindow : Window
 
     private void ApplyTheme(bool isDark)
     {
+        bool animate = _vm.Settings.EnableAnimations && IsLoaded && ActualWidth > 0 && ActualHeight > 0;
+        System.Windows.Media.Imaging.RenderTargetBitmap? snapshot = null;
+
+        if (animate)
+        {
+            try
+            {
+                var dpi = System.Windows.Media.VisualTreeHelper.GetDpi(this);
+                snapshot = new System.Windows.Media.Imaging.RenderTargetBitmap(
+                    (int)(ActualWidth * dpi.DpiScaleX),
+                    (int)(ActualHeight * dpi.DpiScaleY),
+                    dpi.PixelsPerInchX, dpi.PixelsPerInchY,
+                    System.Windows.Media.PixelFormats.Pbgra32);
+                snapshot.Render(this);
+                snapshot.Freeze();
+            }
+            catch
+            {
+                snapshot = null;
+            }
+        }
+
         var themeUri = isDark
             ? new Uri("Themes/DarkTheme.xaml", UriKind.Relative)
             : new Uri("Themes/LightTheme.xaml", UriKind.Relative);
@@ -254,6 +318,21 @@ public partial class MainWindow : Window
 
         Background = (System.Windows.Media.Brush)FindResource("BgPrimaryBrush");
         Foreground = (System.Windows.Media.Brush)FindResource("FgPrimaryBrush");
+
+        if (snapshot is not null)
+        {
+            ThemeCrossfadeOverlay.Source = snapshot;
+            ThemeCrossfadeOverlay.Opacity = 1;
+            ThemeCrossfadeOverlay.Visibility = Visibility.Visible;
+
+            var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(250));
+            fadeOut.Completed += (_, _) =>
+            {
+                ThemeCrossfadeOverlay.Visibility = Visibility.Collapsed;
+                ThemeCrossfadeOverlay.Source = null;
+            };
+            ThemeCrossfadeOverlay.BeginAnimation(OpacityProperty, fadeOut);
+        }
     }
 
     private void PopulateDriveTree()
@@ -350,6 +429,12 @@ public partial class MainWindow : Window
                 });
             }
         }
+    }
+
+    private void FolderTree_MouseEnter(object sender, MouseEventArgs e)
+    {
+        if (sender is TreeView tv)
+            Keyboard.Focus(tv);
     }
 
     private void FolderTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)

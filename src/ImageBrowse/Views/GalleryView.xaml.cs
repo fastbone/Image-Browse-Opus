@@ -90,6 +90,12 @@ public partial class GalleryView : UserControl
         return null;
     }
 
+    private void GalleryListBox_MouseEnter(object sender, MouseEventArgs e)
+    {
+        if (sender is ListBox lb)
+            Keyboard.Focus(lb);
+    }
+
     private void GalleryListBox_KeyDown(object sender, KeyEventArgs e)
     {
         if (ViewModel is null) return;

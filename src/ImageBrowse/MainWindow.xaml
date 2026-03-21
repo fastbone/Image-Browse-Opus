@@ -25,8 +25,10 @@
 
         <!-- TOOLBAR -->
         <Border Grid.Row="0" Background="{DynamicResource BgSecondaryBrush}"
-                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1"
-                Padding="8,6">
+                BorderThickness="0" Padding="8,6" Panel.ZIndex="10">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.15" Direction="270" Color="Black" />
+            </Border.Effect>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />  <!-- Toggle folder -->
@@ -196,6 +198,7 @@
             <!-- Folder tree -->
             <TreeView x:Name="FolderTree" Grid.Column="0"
                       SelectedItemChanged="FolderTree_SelectedItemChanged"
+                      MouseEnter="FolderTree_MouseEnter"
                       Padding="2" FontSize="13">
             </TreeView>
 
@@ -218,6 +221,10 @@
                 </StackPanel>
             </Border>
         </Grid>
+
+        <!-- Theme crossfade overlay -->
+        <Image x:Name="ThemeCrossfadeOverlay" Grid.RowSpan="3" Panel.ZIndex="200"
+               Stretch="None" Opacity="0" IsHitTestVisible="False" Visibility="Collapsed" />
 
         <!-- Escape toast -->
         <Border x:Name="EscapeToast" Grid.Row="1" Opacity="0" IsHitTestVisible="False"
@@ -244,6 +251,8 @@
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
                 <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding ThumbnailLoadProgress}" FontSize="12"
+                               Foreground="{DynamicResource FgMutedBrush}" Margin="8,0" />
                     <TextBlock x:Name="UpdateNotification" FontSize="12" Margin="8,0"
                                Foreground="{DynamicResource AccentBrush}" Cursor="Hand"
                                MouseDown="UpdateNotification_MouseDown"

@@ -34,6 +34,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private SortDirection _currentSortDirection = SortDirection.Ascending;
     [ObservableProperty] private bool _isFolderTreeVisible = true;
     [ObservableProperty] private bool _hasCustomFolderSort;
+    [ObservableProperty] private string _thumbnailLoadProgress = "";
 
     public string SelectedItemInfo
     {
@@ -601,6 +602,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 if (item.ImageWidth == 0 && width > 0) item.ImageWidth = width;
                 if (item.ImageHeight == 0 && height > 0) item.ImageHeight = height;
             }
+            UpdateThumbnailProgress();
         });
     }
 
@@ -611,6 +613,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             var item = SortedImages.FirstOrDefault(i => i.FilePath == filePath);
             if (item is not null)
                 item.IsThumbnailLoading = false;
+            UpdateThumbnailProgress();
         });
     }
 
@@ -624,7 +627,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 item.Thumbnail = thumbnail;
                 item.IsThumbnailLoading = false;
             }
+            UpdateThumbnailProgress();
         });
+    }
+
+    private void UpdateThumbnailProgress()
+    {
+        int loading = SortedImages.Count(i => i.IsThumbnailLoading);
+        int loaded = SortedImages.Count(i => !i.IsFolder && !i.IsParentFolder && i.Thumbnail is not null);
+        int total = SortedImages.Count(i => !i.IsFolder && !i.IsParentFolder);
+
+        if (loading > 0 && total > 0)
+            ThumbnailLoadProgress = $"Thumbnails: {loaded} / {total}";
+        else
+            ThumbnailLoadProgress = "";
     }
 
     public void RemoveImages(IList<ImageItem> items)

@@ -60,6 +60,12 @@ public sealed class SettingsService
         set => _db.SetSetting("registered_extensions", value);
     }
 
+    public bool EnableAnimations
+    {
+        get => _db.GetSetting("enable_animations", "true") == "true";
+        set => _db.SetSetting("enable_animations", value ? "true" : "false");
+    }
+
     public (SortField Field, SortDirection Direction)? GetFolderSort(string folderPath)
     {
         var pref = _db.GetFolderSortPreference(folderPath);

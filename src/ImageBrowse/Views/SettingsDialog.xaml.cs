@@ -85,6 +85,7 @@ public partial class SettingsDialog : Window
         UpdateSortDirButton();
 
         ConfirmDeleteCheck.IsChecked = vm.Settings.ConfirmBeforeDelete;
+        EnableAnimationsCheck.IsChecked = vm.Settings.EnableAnimations;
 
         if (vm.IsDarkTheme)
             DarkRadio.IsChecked = true;
@@ -265,6 +266,7 @@ public partial class SettingsDialog : Window
         _vm.Settings.DefaultSortField = _defaultSortField;
         _vm.Settings.DefaultSortDirection = _defaultSortDirection;
         _vm.Settings.ConfirmBeforeDelete = ConfirmDeleteCheck.IsChecked == true;
+        _vm.Settings.EnableAnimations = EnableAnimationsCheck.IsChecked == true;
 
         bool isDark = DarkRadio.IsChecked == true;
         _vm.IsDarkTheme = isDark;

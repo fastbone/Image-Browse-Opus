@@ -1,0 +1,78 @@
+<Window x:Class="ImageBrowse.Views.SettingsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:ImageBrowse.Models"
+        Title="Settings"
+        Width="520" Height="420"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        KeyDown="Window_KeyDown">
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Startup Folder -->
+        <TextBlock Grid.Row="0" Text="Startup Folder" FontWeight="SemiBold" FontSize="13"
+                   Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,6" />
+        <Grid Grid.Row="1" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="StartupFolderBox"
+                     Style="{DynamicResource AddressBar}"
+                     VerticalContentAlignment="Center" />
+            <Button Grid.Column="1" Content="Browse..." Margin="8,0,0,0"
+                    Style="{DynamicResource ToolbarButton}" Padding="12,6"
+                    Click="BrowseFolder_Click" />
+        </Grid>
+
+        <!-- Default Sort -->
+        <TextBlock Grid.Row="2" Text="Default Sort (when folder has no custom sort)" FontWeight="SemiBold" FontSize="13"
+                   Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,6" />
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,16">
+            <ComboBox x:Name="DefaultSortFieldCombo" Width="140">
+                <ComboBoxItem Content="Name" Tag="{x:Static models:SortField.FileName}" />
+                <ComboBoxItem Content="Date Modified" Tag="{x:Static models:SortField.DateModified}" />
+                <ComboBoxItem Content="Date Created" Tag="{x:Static models:SortField.DateCreated}" />
+                <ComboBoxItem Content="Date Taken" Tag="{x:Static models:SortField.DateTaken}" />
+                <ComboBoxItem Content="File Size" Tag="{x:Static models:SortField.FileSize}" />
+                <ComboBoxItem Content="Dimensions" Tag="{x:Static models:SortField.Dimensions}" />
+                <ComboBoxItem Content="File Type" Tag="{x:Static models:SortField.FileType}" />
+                <ComboBoxItem Content="Rating" Tag="{x:Static models:SortField.Rating}" />
+            </ComboBox>
+            <Button x:Name="DefaultSortDirButton" Margin="8,0,0,0"
+                    Style="{DynamicResource ToolbarButton}" Padding="10,4" FontSize="14"
+                    Click="ToggleDefaultSortDir_Click" />
+        </StackPanel>
+
+        <!-- Theme -->
+        <TextBlock Grid.Row="4" Text="Theme" FontWeight="SemiBold" FontSize="13"
+                   Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,6" />
+        <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,0,0,16" VerticalAlignment="Top">
+            <RadioButton x:Name="DarkRadio" Content="Dark" Margin="0,0,16,0"
+                         Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" />
+            <RadioButton x:Name="LightRadio" Content="Light"
+                         Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" />
+        </StackPanel>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="OK" Width="80" Margin="0,0,8,0"
+                    Style="{DynamicResource ToolbarButton}" Padding="8,8"
+                    Click="OK_Click" IsDefault="True" />
+            <Button Content="Cancel" Width="80"
+                    Style="{DynamicResource ToolbarButton}" Padding="8,8"
+                    Click="Cancel_Click" IsCancel="True" />
+        </StackPanel>
+    </Grid>
+</Window>

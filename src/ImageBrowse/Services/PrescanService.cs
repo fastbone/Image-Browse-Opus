@@ -1,7 +1,8 @@
-using ImageMagick;
-using ImageMagick.Formats;
+using System.Collections.Frozen;
 using System.IO;
 using System.Windows.Media.Imaging;
+using ImageMagick;
+using ImageMagick.Formats;
 
 namespace ImageBrowse.Services;
 
@@ -18,13 +19,23 @@ public sealed class PrescanService
 {
     private const int ThumbnailSize = 256;
 
-    private static readonly HashSet<string> RawExtensions = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly FrozenSet<string> RawExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         ".cr2", ".cr3", ".crw", ".nef", ".nrw", ".arw", ".sr2", ".srf",
         ".orf", ".raf", ".rw2", ".rwl", ".pef", ".dng", ".mrw", ".x3f",
         ".srw", ".3fr", ".dcr", ".kdc", ".erf", ".mos", ".mef",
         ".raw", ".bay", ".cap", ".iiq", ".ptx"
-    };
+    }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+
+    private static readonly FrozenSet<string> WpfNativeExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".tif", ".ico", ".jfif"
+    }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+
+    private static readonly FrozenSet<string> JpegExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg", ".jpeg", ".jfif"
+    }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     public event Action<PrescanProgress>? ProgressChanged;
 
@@ -152,7 +163,7 @@ public sealed class PrescanService
             byte[] thumbnailData;
             int width, height;
 
-            var ext = Path.GetExtension(filePath).ToLowerInvariant();
+            var ext = Path.GetExtension(filePath);
 
             if (RawExtensions.Contains(ext))
             {
@@ -160,7 +171,7 @@ public sealed class PrescanService
                 if (thumbnailData.Length == 0)
                     (thumbnailData, width, height) = GenerateWithMagick(filePath);
             }
-            else if (ext is ".jpg" or ".jpeg" or ".png" or ".bmp" or ".gif" or ".tiff" or ".tif" or ".ico" or ".jfif")
+            else if (WpfNativeExtensions.Contains(ext))
             {
                 (thumbnailData, width, height) = GenerateWithWpf(filePath);
             }
@@ -256,8 +267,8 @@ public sealed class PrescanService
         try
         {
             var settings = new MagickReadSettings();
-            var ext = Path.GetExtension(filePath).ToUpperInvariant();
-            if (ext is ".JPG" or ".JPEG" or ".JFIF")
+            var ext = Path.GetExtension(filePath);
+            if (JpegExtensions.Contains(ext))
             {
                 settings.SetDefines(new JpegReadDefines
                 {

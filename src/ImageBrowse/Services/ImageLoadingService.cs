@@ -1,13 +1,14 @@
-using ImageMagick;
+using System.Collections.Frozen;
 using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using ImageMagick;
 
 namespace ImageBrowse.Services;
 
 public sealed class ImageLoadingService
 {
-    private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly FrozenSet<string> SupportedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif", ".webp",
         ".heic", ".heif", ".avif", ".jxl", ".svg", ".ico", ".cur",
@@ -22,7 +23,7 @@ public sealed class ImageLoadingService
         ".rgbe", ".pfm", ".fits", ".fit", ".fts",
         ".dpx", ".cin", ".sgi", ".mng", ".apng",
         ".jfif", ".wbmp", ".xbm", ".xpm"
-    };
+    }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     public static bool IsSupported(string filePath)
     {
@@ -51,10 +52,10 @@ public sealed class ImageLoadingService
         }
     }
 
-    private static readonly HashSet<string> WpfNativeExtensions = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly FrozenSet<string> WpfNativeExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".tif", ".ico", ".jfif"
-    };
+    }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     public BitmapSource? LoadFullImage(string filePath, int maxDimension = 0)
     {

@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.IO;
 using System.Security.Cryptography;
 
@@ -9,17 +10,20 @@ public static class ContentHashService
 
     public static string ComputeHash(string filePath, long fileSize)
     {
-        using var sha = SHA256.Create();
-        using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-
-        var buffer = new byte[Math.Min(SampleSize, stream.Length)];
-        int bytesRead = stream.Read(buffer, 0, buffer.Length);
-
-        sha.TransformBlock(buffer, 0, bytesRead, null, 0);
-
-        var sizeBytes = BitConverter.GetBytes(fileSize);
-        sha.TransformFinalBlock(sizeBytes, 0, sizeBytes.Length);
-
-        return Convert.ToHexString(sha.Hash!).ToLowerInvariant();
+        int sampleLen = (int)Math.Min(SampleSize, fileSize);
+        int totalLen = sampleLen + sizeof(long);
+        var buffer = ArrayPool<byte>.Shared.Rent(totalLen);
+        try
+        {
+            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            int bytesRead = stream.Read(buffer, 0, sampleLen);
+            BitConverter.TryWriteBytes(buffer.AsSpan(bytesRead), fileSize);
+            var hash = SHA256.HashData(buffer.AsSpan(0, bytesRead + sizeof(long)));
+            return Convert.ToHexString(hash).ToLowerInvariant();
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 }

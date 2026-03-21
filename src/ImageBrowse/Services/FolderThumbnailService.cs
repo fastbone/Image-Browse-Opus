@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
@@ -183,10 +184,15 @@ public sealed class FolderThumbnailService : IDisposable
         return rtb;
     }
 
-    private static readonly HashSet<string> WpfNativeExtensions = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly FrozenSet<string> WpfNativeExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".tif", ".ico", ".jfif"
-    };
+    }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+
+    private static readonly FrozenSet<string> JpegExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg", ".jpeg", ".jfif"
+    }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     private static BitmapSource? LoadThumbnail(string filePath, int maxDim)
     {
@@ -226,8 +232,8 @@ public sealed class FolderThumbnailService : IDisposable
         try
         {
             var settings = new ImageMagick.MagickReadSettings();
-            var ext = Path.GetExtension(filePath).ToUpperInvariant();
-            if (ext is ".JPG" or ".JPEG" or ".JFIF")
+            var ext = Path.GetExtension(filePath);
+            if (JpegExtensions.Contains(ext))
             {
                 settings.SetDefines(new ImageMagick.Formats.JpegReadDefines
                 {

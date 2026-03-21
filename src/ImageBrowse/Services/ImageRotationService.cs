@@ -18,8 +18,8 @@ public static class ImageRotationService
             image.AutoOrient();
             image.Rotate(90);
 
-            var ext = Path.GetExtension(filePath).ToLowerInvariant();
-            if (ext is ".jpg" or ".jpeg")
+            var ext = Path.GetExtension(filePath);
+            if (ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase) || ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase))
                 image.Quality = 100;
 
             image.RemoveProfile("exif");

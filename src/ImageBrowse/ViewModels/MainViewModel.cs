@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ImageBrowse.Helpers;
 using ImageBrowse.Models;
 using ImageBrowse.Services;
 using System.Collections.ObjectModel;
@@ -33,7 +34,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _hasCustomFolderSort;
 
     public ObservableCollection<ImageItem> Images { get; } = [];
-    public ObservableCollection<ImageItem> SortedImages { get; } = [];
+    public RangeObservableCollection<ImageItem> SortedImages { get; } = new();
 
     private List<ImageItem> _allImages = [];
     private CancellationTokenSource? _loadCts;
@@ -230,10 +231,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void ApplySortAndPopulate()
     {
-        var sorted = ApplySort(_allImages);
-        SortedImages.Clear();
-        foreach (var item in sorted)
-            SortedImages.Add(item);
+        SortedImages.ReplaceAll(ApplySort(_allImages));
     }
 
     private IEnumerable<ImageItem> ApplySort(IEnumerable<ImageItem> items)

@@ -9,7 +9,28 @@
     <UserControl.Resources>
         <helpers:BoolToVisibilityConverter x:Key="BoolToVis" />
         <helpers:RatingToStarsConverter x:Key="RatingToStars" />
+
+        <!-- Shimmer animation for loading placeholders -->
+        <Storyboard x:Key="ShimmerAnimation" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetProperty="(Rectangle.Fill).(LinearGradientBrush.GradientStops)[1].Offset"
+                             From="-0.5" To="1.5" Duration="0:0:1.2" />
+        </Storyboard>
     </UserControl.Resources>
+
+    <Grid>
+        <!-- Empty state overlay -->
+        <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Visibility="Collapsed">
+            <TextBlock Text="&#xEB9F;" FontFamily="{DynamicResource IconFont}"
+                       FontSize="48" HorizontalAlignment="Center"
+                       Foreground="{DynamicResource FgMutedBrush}" Margin="0,0,0,12" />
+            <TextBlock Text="No images in this folder" FontSize="16" FontWeight="Medium"
+                       Foreground="{DynamicResource FgSecondaryBrush}" HorizontalAlignment="Center"
+                       Margin="0,0,0,6" />
+            <TextBlock Text="Browse to a folder containing images, or try a subfolder"
+                       FontSize="13" Foreground="{DynamicResource FgMutedBrush}"
+                       HorizontalAlignment="Center" />
+        </StackPanel>
 
     <ListBox x:Name="GalleryListBox"
              ItemsSource="{Binding SortedImages}"
@@ -46,20 +67,31 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="ListBoxItem">
                             <Border x:Name="border" Background="Transparent"
-                                    CornerRadius="6" Padding="4" SnapsToDevicePixels="True">
+                                    CornerRadius="8" Padding="4" SnapsToDevicePixels="True"
+                                    BorderBrush="Transparent" BorderThickness="2"
+                                    RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform ScaleX="1" ScaleY="1" />
+                                </Border.RenderTransform>
                                 <ContentPresenter />
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter TargetName="border" Property="Background"
                                             Value="{DynamicResource BgHoverBrush}" />
+                                    <Setter TargetName="border" Property="BorderBrush"
+                                            Value="{DynamicResource BorderBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsSelected" Value="True">
                                     <Setter TargetName="border" Property="Background"
                                             Value="{DynamicResource BgSelectedBrush}" />
                                     <Setter TargetName="border" Property="BorderBrush"
                                             Value="{DynamicResource AccentBrush}" />
-                                    <Setter TargetName="border" Property="BorderThickness" Value="2" />
+                                    <Setter TargetName="border" Property="RenderTransform">
+                                        <Setter.Value>
+                                            <ScaleTransform ScaleX="1.02" ScaleY="1.02" />
+                                        </Setter.Value>
+                                    </Setter>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -79,7 +111,7 @@
                     </Grid.RowDefinitions>
 
                     <!-- Thumbnail -->
-                    <Border Grid.Row="0" Background="{DynamicResource BgSurfaceBrush}" CornerRadius="4"
+                    <Border Grid.Row="0" Background="{DynamicResource BgSurfaceBrush}" CornerRadius="8"
                             ClipToBounds="True">
                         <Grid>
                             <!-- Parent folder up-arrow icon -->
@@ -94,11 +126,12 @@
                                         </Style.Triggers>
                                     </Style>
                                 </StackPanel.Style>
-                                <TextBlock Text="⬆" FontSize="48" Foreground="{DynamicResource FgMutedBrush}"
+                                <TextBlock Text="&#xE74A;" FontFamily="{DynamicResource IconFont}"
+                                           FontSize="40" Foreground="{DynamicResource FgMutedBrush}"
                                            HorizontalAlignment="Center" />
-                                <TextBlock Text=".." FontSize="18" FontWeight="SemiBold"
+                                <TextBlock Text=".." FontSize="16" FontWeight="SemiBold"
                                            Foreground="{DynamicResource FgMutedBrush}"
-                                           HorizontalAlignment="Center" Margin="0,-4,0,0" />
+                                           HorizontalAlignment="Center" Margin="0,2,0,0" />
                             </StackPanel>
 
                             <!-- Regular thumbnail (hidden for parent folder) -->
@@ -115,32 +148,40 @@
                                 </Image.Style>
                             </Image>
 
-                            <!-- Loading indicator -->
-                            <TextBlock Text="..." FontSize="20"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       Foreground="{DynamicResource FgMutedBrush}"
-                                       Visibility="{Binding IsThumbnailLoading,
-                                           Converter={StaticResource BoolToVis}}" />
+                            <!-- Shimmer loading placeholder -->
+                            <Rectangle RadiusX="4" RadiusY="4"
+                                       HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                       Margin="12"
+                                       Visibility="{Binding IsThumbnailLoading, Converter={StaticResource BoolToVis}}">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                                        <GradientStop Color="{DynamicResource BgHover}" Offset="0" />
+                                        <GradientStop Color="{DynamicResource BgTertiary}" Offset="0.5" />
+                                        <GradientStop Color="{DynamicResource BgHover}" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
 
                             <!-- Tag indicator -->
                             <Border Background="{DynamicResource AccentBrush}"
-                                    CornerRadius="3" Padding="3,1" Margin="4"
+                                    CornerRadius="8" Padding="5,2" Margin="6"
                                     HorizontalAlignment="Right" VerticalAlignment="Top"
                                     Visibility="{Binding IsTagged,
                                         Converter={StaticResource BoolToVis}}">
-                                <TextBlock Text="T" FontSize="10" FontWeight="Bold"
-                                           Foreground="White" />
+                                <TextBlock Text="&#xE1CB;" FontFamily="{DynamicResource IconFont}"
+                                           FontSize="10" Foreground="White" />
                             </Border>
 
                             <!-- Rating overlay -->
                             <TextBlock Text="{Binding Rating, Converter={StaticResource RatingToStars}}"
                                        FontSize="11" Foreground="#FFD700"
                                        HorizontalAlignment="Left" VerticalAlignment="Bottom"
-                                       Margin="4,0,0,4" />
+                                       Margin="6,0,0,6" />
 
-                            <!-- Folder badge overlay -->
-                            <Border Background="#AA000000" CornerRadius="0,0,4,4"
-                                    VerticalAlignment="Bottom" Padding="4,2">
+                            <!-- Folder badge overlay (pill shape with icon) -->
+                            <Border Background="#CC000000" CornerRadius="10"
+                                    VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                                    Padding="10,4" Margin="0,0,0,6">
                                 <Border.Style>
                                     <Style TargetType="Border">
                                         <Setter Property="Visibility" Value="Collapsed" />
@@ -155,8 +196,13 @@
                                         </Style.Triggers>
                                     </Style>
                                 </Border.Style>
-                                <TextBlock Text="📁 Folder" FontSize="10" Foreground="White"
-                                           HorizontalAlignment="Center" />
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xED41;" FontFamily="{DynamicResource IconFont}"
+                                               FontSize="11" Foreground="White" Margin="0,0,4,0"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock Text="Folder" FontSize="11" Foreground="White"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
                             </Border>
                         </Grid>
                     </Border>
@@ -179,4 +225,5 @@
             </DataTemplate>
         </ListBox.ItemTemplate>
     </ListBox>
+    </Grid>
 </UserControl>

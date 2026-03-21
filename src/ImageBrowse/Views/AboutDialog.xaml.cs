@@ -16,6 +16,9 @@ public partial class AboutDialog : Window
         InitializeComponent();
         _updateService = updateService;
 
+        Background = (System.Windows.Media.Brush)FindResource("BgPrimaryBrush");
+        Foreground = (System.Windows.Media.Brush)FindResource("FgPrimaryBrush");
+
         var infoVersion = Assembly.GetEntryAssembly()?
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
         VersionText.Text = $"Version {infoVersion ?? "unknown"}";

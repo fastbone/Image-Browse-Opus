@@ -1,3 +1,5 @@
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,13 +12,40 @@ namespace ImageBrowse.Views;
 
 public partial class GalleryView : UserControl
 {
+    public event Action<int>? SelectionCountChanged;
+
     public GalleryView()
     {
         InitializeComponent();
         GalleryListBox.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(OnScrollChanged));
+        GalleryListBox.SelectionChanged += (_, _) =>
+        {
+            int count = GalleryListBox.SelectedItems.Count;
+            SelectionCountChanged?.Invoke(count);
+        };
+        DataContextChanged += (_, _) =>
+        {
+            if (ViewModel is not null)
+            {
+                ViewModel.SortedImages.CollectionChanged += (_, _) => UpdateEmptyState();
+                ViewModel.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName == nameof(MainViewModel.IsLoading))
+                        UpdateEmptyState();
+                };
+            }
+        };
     }
 
     private MainViewModel? ViewModel => DataContext as MainViewModel;
+
+    private void UpdateEmptyState()
+    {
+        if (ViewModel is null) return;
+        bool isEmpty = ViewModel.SortedImages.Count == 0 && !ViewModel.IsLoading
+                       && !string.IsNullOrEmpty(ViewModel.CurrentPath);
+        EmptyState.Visibility = isEmpty ? Visibility.Visible : Visibility.Collapsed;
+    }
 
     private void OnScrollChanged(object sender, ScrollChangedEventArgs e)
     {

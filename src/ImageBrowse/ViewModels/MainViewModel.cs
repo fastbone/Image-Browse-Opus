@@ -25,13 +25,33 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _isDarkTheme = true;
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private int _thumbnailSize = 180;
-    [ObservableProperty] private ImageItem? _selectedItem;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedItemInfo))]
+    private ImageItem? _selectedItem;
     [ObservableProperty] private bool _isFullscreenActive;
     [ObservableProperty] private int _selectedIndex = -1;
     [ObservableProperty] private SortField _currentSortField = SortField.FileName;
     [ObservableProperty] private SortDirection _currentSortDirection = SortDirection.Ascending;
     [ObservableProperty] private bool _isFolderTreeVisible = true;
     [ObservableProperty] private bool _hasCustomFolderSort;
+
+    public string SelectedItemInfo
+    {
+        get
+        {
+            var item = SelectedItem;
+            if (item is null || item.IsFolder)
+                return "";
+            var parts = new List<string>();
+            if (item.ImageWidth > 0 && item.ImageHeight > 0)
+                parts.Add($"{item.ImageWidth} × {item.ImageHeight}");
+            if (item.FileSize > 0)
+                parts.Add(item.FileSizeDisplay);
+            return string.Join("  |  ", parts);
+        }
+    }
+
+    public int SelectionCount { get; private set; }
 
     public ObservableCollection<ImageItem> Images { get; } = [];
     public RangeObservableCollection<ImageItem> SortedImages { get; } = new();

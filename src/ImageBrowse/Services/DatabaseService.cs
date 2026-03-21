@@ -382,6 +382,16 @@ public sealed class DatabaseService : IDisposable
         }
     }
 
+    public int GetThumbnailCount()
+    {
+        lock (_lock)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = "SELECT COUNT(*) FROM thumbnails";
+            return Convert.ToInt32(cmd.ExecuteScalar());
+        }
+    }
+
     public int ClearAllThumbnails()
     {
         lock (_lock)

@@ -13,7 +13,8 @@ public partial class App : Application
             args.Handled = true;
         };
 
-        var mainWindow = new MainWindow();
+        string? startupPath = e.Args.Length > 0 ? e.Args[0] : null;
+        var mainWindow = new MainWindow(startupPath);
         mainWindow.Show();
     }
 }

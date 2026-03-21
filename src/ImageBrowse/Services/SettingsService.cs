@@ -54,6 +54,12 @@ public sealed class SettingsService
         set => _db.SetSetting("confirm_before_delete", value ? "true" : "false");
     }
 
+    public string RegisteredExtensions
+    {
+        get => _db.GetSetting("registered_extensions", "");
+        set => _db.SetSetting("registered_extensions", value);
+    }
+
     public (SortField Field, SortDirection Direction)? GetFolderSort(string folderPath)
     {
         var pref = _db.GetFolderSortPreference(folderPath);

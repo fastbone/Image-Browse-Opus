@@ -7,6 +7,10 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Themes/DarkTheme.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="Window">
+                <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI, sans-serif" />
+            </Style>
+            <FontFamily x:Key="AppFont">Segoe UI Variable Display, Segoe UI, sans-serif</FontFamily>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

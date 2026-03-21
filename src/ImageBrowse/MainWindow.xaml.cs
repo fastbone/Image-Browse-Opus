@@ -7,6 +7,8 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Animation;
+using System.Windows.Threading;
 
 namespace ImageBrowse;
 
@@ -19,14 +21,25 @@ public partial class MainWindow : Window
     private bool _navigatingFromHistory;
     private bool _suppressTreeNavigation;
     private DateTime _lastEscapePress = DateTime.MinValue;
+    private DispatcherTimer? _escapeToastTimer;
+    private DispatcherTimer? _loadingDelayTimer;
+    private readonly string? _startupPath;
+    private double _folderTreeWidth = 240;
+    private const double FolderTreeAnimDuration = 200;
+    private const double FolderTreeMinWidth = 120;
 
-    public MainWindow()
+    public MainWindow(string? startupPath = null)
     {
         InitializeComponent();
         _vm = new MainViewModel();
         DataContext = _vm;
+        _startupPath = startupPath;
 
         _vm.PropertyChanged += ViewModel_PropertyChanged;
+        Gallery.SelectionCountChanged += count =>
+        {
+            SelectionCountText.Text = count > 1 ? $"{count} selected" : "";
+        };
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -34,13 +47,46 @@ public partial class MainWindow : Window
         ApplyTheme(_vm.IsDarkTheme);
         PopulateDriveTree();
 
-        var startPath = _vm.Settings.StartupFolder;
-        if (!Directory.Exists(startPath))
-            startPath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
-        if (Directory.Exists(startPath))
-            _ = NavigateToPath(startPath);
+        if (!string.IsNullOrEmpty(_startupPath))
+        {
+            _ = HandleStartupPath(_startupPath);
+        }
+        else
+        {
+            var startPath = _vm.Settings.StartupFolder;
+            if (!Directory.Exists(startPath))
+                startPath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+            if (Directory.Exists(startPath))
+                _ = NavigateToPath(startPath);
+        }
 
         _ = CheckForUpdatesInBackground();
+    }
+
+    private async Task HandleStartupPath(string path)
+    {
+        if (Directory.Exists(path))
+        {
+            await NavigateToPath(path);
+            return;
+        }
+
+        if (File.Exists(path) && ImageLoadingService.IsSupported(path))
+        {
+            var folder = Path.GetDirectoryName(path);
+            if (folder is null) return;
+
+            await NavigateToPath(folder);
+
+            var match = _vm.SortedImages.FirstOrDefault(
+                i => string.Equals(i.FilePath, path, StringComparison.OrdinalIgnoreCase));
+            if (match is not null)
+            {
+                _vm.SelectedIndex = _vm.SortedImages.IndexOf(match);
+                _vm.SelectedItem = match;
+                _vm.EnterFullscreen();
+            }
+        }
     }
 
     private async Task CheckForUpdatesInBackground()
@@ -77,12 +123,110 @@ public partial class MainWindow : Window
                 OpenFullscreenViewer();
                 break;
             case nameof(MainViewModel.CurrentSortDirection):
-                SortDirectionButton.Content = _vm.CurrentSortDirection == SortDirection.Ascending ? "\u25B2" : "\u25BC";
+                SortDirectionIcon.Text = _vm.CurrentSortDirection == SortDirection.Ascending ? "\uE74A" : "\uE74B";
                 break;
             case nameof(MainViewModel.CurrentSortField):
                 SyncSortComboBox();
                 break;
+            case nameof(MainViewModel.IsLoading):
+                HandleLoadingChanged(_vm.IsLoading);
+                break;
+            case nameof(MainViewModel.IsFolderTreeVisible):
+                AnimateFolderTree(_vm.IsFolderTreeVisible);
+                break;
         }
+    }
+
+    private void HandleLoadingChanged(bool isLoading)
+    {
+        if (isLoading)
+        {
+            _loadingDelayTimer?.Stop();
+            _loadingDelayTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+            _loadingDelayTimer.Tick += (_, _) =>
+            {
+                _loadingDelayTimer.Stop();
+                if (_vm.IsLoading)
+                {
+                    LoadingOverlay.Visibility = Visibility.Visible;
+                    var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(150));
+                    LoadingOverlay.BeginAnimation(OpacityProperty, fadeIn);
+                }
+            };
+            _loadingDelayTimer.Start();
+        }
+        else
+        {
+            _loadingDelayTimer?.Stop();
+            if (LoadingOverlay.Visibility == Visibility.Visible)
+            {
+                var fadeOut = new DoubleAnimation(LoadingOverlay.Opacity, 0, TimeSpan.FromMilliseconds(150));
+                fadeOut.Completed += (_, _) => LoadingOverlay.Visibility = Visibility.Collapsed;
+                LoadingOverlay.BeginAnimation(OpacityProperty, fadeOut);
+            }
+        }
+    }
+
+    private void ShowEscapeToast()
+    {
+        _escapeToastTimer?.Stop();
+        var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(150));
+        EscapeToast.BeginAnimation(OpacityProperty, fadeIn);
+
+        _escapeToastTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1800) };
+        _escapeToastTimer.Tick += (_, _) =>
+        {
+            _escapeToastTimer.Stop();
+            var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(300));
+            EscapeToast.BeginAnimation(OpacityProperty, fadeOut);
+        };
+        _escapeToastTimer.Start();
+    }
+
+    private void AnimateFolderTree(bool show)
+    {
+        double from = FolderTreeColumn.Width.Value;
+        double to = show ? _folderTreeWidth : 0;
+
+        if (!show && from > 0)
+            _folderTreeWidth = from;
+
+        if (show)
+        {
+            FolderTree.Visibility = Visibility.Visible;
+            FolderTreeSplitter.Visibility = Visibility.Visible;
+            FolderTreeColumn.MinWidth = 0;
+        }
+
+        int steps = 12;
+        int stepMs = (int)(FolderTreeAnimDuration / steps);
+        int currentStep = 0;
+
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(stepMs) };
+        timer.Tick += (_, _) =>
+        {
+            currentStep++;
+            double t = (double)currentStep / steps;
+            t = 1 - Math.Pow(1 - t, 3);
+            double width = from + (to - from) * t;
+            FolderTreeColumn.Width = new GridLength(Math.Max(0, width));
+
+            if (currentStep >= steps)
+            {
+                timer.Stop();
+                FolderTreeColumn.Width = new GridLength(to);
+                if (!show)
+                {
+                    FolderTree.Visibility = Visibility.Collapsed;
+                    FolderTreeSplitter.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    FolderTreeColumn.MinWidth = FolderTreeMinWidth;
+                }
+            }
+        };
+        timer.Start();
     }
 
     private void SyncSortComboBox()
@@ -299,9 +443,15 @@ public partial class MainWindow : Window
         if (e.Key == Key.Escape)
         {
             var now = DateTime.UtcNow;
-            if ((now - _lastEscapePress).TotalMilliseconds < 500)
+            if ((now - _lastEscapePress).TotalMilliseconds < 2000)
+            {
                 Application.Current.Shutdown();
-            _lastEscapePress = now;
+            }
+            else
+            {
+                _lastEscapePress = now;
+                ShowEscapeToast();
+            }
             e.Handled = true;
             return;
         }

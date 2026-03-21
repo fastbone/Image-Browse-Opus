@@ -23,9 +23,15 @@ public partial class FullscreenViewer : Window
     private CancellationTokenSource _loadCts = new();
     private int _loadSequence;
 
+    private bool _isDragging;
+    private Point _dragStart;
+    private double _dragHOffset;
+    private double _dragVOffset;
+
     private const double ZoomStep = 0.15;
     private const double MinZoom = 0.1;
     private const double MaxZoom = 20.0;
+    private const int CrossfadeDurationMs = 150;
 
     public FullscreenViewer(MainViewModel vm)
     {
@@ -67,11 +73,11 @@ public partial class FullscreenViewer : Window
             return (i.FilePath, i.IsFolder);
         });
 
-        LoadCurrentImage();
+        LoadCurrentImage(crossfade: false);
         _cursorTimer.Start();
     }
 
-    private async void LoadCurrentImage()
+    private async void LoadCurrentImage(bool crossfade = true)
     {
         var item = _vm.SelectedItem;
         if (item is null) return;
@@ -81,16 +87,43 @@ public partial class FullscreenViewer : Window
         var ct = _loadCts.Token;
         int seq = Interlocked.Increment(ref _loadSequence);
 
+        System.Windows.Media.Imaging.BitmapSource? newImage = null;
+
         var cached = _prefetch.GetCached(_vm.SelectedIndex);
         if (cached is not null)
         {
-            DisplayImage.Source = cached;
+            newImage = cached;
         }
         else
         {
             var image = await _prefetch.GetOrLoadAsync(_vm.SelectedIndex);
             if (ct.IsCancellationRequested || seq != _loadSequence) return;
-            DisplayImage.Source = image;
+            newImage = image;
+        }
+
+        if (crossfade && DisplayImage.Source is not null && newImage is not null)
+        {
+            BackImage.Source = DisplayImage.Source;
+            BackImageScale.ScaleX = ImageScale.ScaleX;
+            BackImageScale.ScaleY = ImageScale.ScaleY;
+            BackImage.MaxWidth = DisplayImage.MaxWidth;
+            BackImage.MaxHeight = DisplayImage.MaxHeight;
+            BackImage.Opacity = 1;
+
+            DisplayImage.Source = newImage;
+            DisplayImage.Opacity = 0;
+
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(CrossfadeDurationMs));
+            var fadeOutBack = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(CrossfadeDurationMs));
+            fadeOutBack.Completed += (_, _) => BackImage.Source = null;
+
+            DisplayImage.BeginAnimation(OpacityProperty, fadeIn);
+            BackImage.BeginAnimation(OpacityProperty, fadeOutBack);
+        }
+        else
+        {
+            DisplayImage.Source = newImage;
+            DisplayImage.Opacity = 1;
         }
 
         _prefetch.UpdatePosition(_vm.SelectedIndex, _vm.SortedImages.Count);
@@ -187,22 +220,75 @@ public partial class FullscreenViewer : Window
     private void UpdateInfo(ImageItem item)
     {
         InfoFileName.Text = item.FileName;
-        InfoDimensions.Text = item.ImageWidth > 0 ? $"Dimensions: {item.DimensionsDisplay}" : "";
-        InfoFileSize.Text = $"Size: {item.FileSizeDisplay}";
-        InfoDateTaken.Text = item.DateTaken.HasValue ? $"Taken: {item.DateTaken:yyyy-MM-dd HH:mm}" : "";
-        InfoDateModified.Text = $"Modified: {item.DateModified:yyyy-MM-dd HH:mm}";
-        InfoCamera.Text = !string.IsNullOrEmpty(item.CameraModel)
-            ? $"Camera: {item.CameraManufacturer} {item.CameraModel}" : "";
-        InfoLens.Text = !string.IsNullOrEmpty(item.LensModel) ? $"Lens: {item.LensModel}" : "";
+
+        if (item.ImageWidth > 0)
+        {
+            InfoDimensions.Text = item.DimensionsDisplay;
+            InfoDimensionsGrid.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            InfoDimensionsGrid.Visibility = Visibility.Collapsed;
+        }
+
+        InfoFileSize.Text = item.FileSizeDisplay;
+
+        if (item.DateTaken.HasValue)
+        {
+            InfoDateTaken.Text = item.DateTaken.Value.ToString("yyyy-MM-dd HH:mm");
+            InfoDateTakenGrid.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            InfoDateTakenGrid.Visibility = Visibility.Collapsed;
+        }
+
+        InfoDateModified.Text = item.DateModified.ToString("yyyy-MM-dd HH:mm");
+
+        bool hasCamera = !string.IsNullOrEmpty(item.CameraModel);
+        bool hasLens = !string.IsNullOrEmpty(item.LensModel);
+
+        if (hasCamera)
+        {
+            InfoCamera.Text = $"{item.CameraManufacturer} {item.CameraModel}".Trim();
+            InfoCameraGrid.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            InfoCameraGrid.Visibility = Visibility.Collapsed;
+        }
+
+        if (hasLens)
+        {
+            InfoLens.Text = item.LensModel;
+            InfoLensGrid.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            InfoLensGrid.Visibility = Visibility.Collapsed;
+        }
 
         var expParts = new List<string>();
         if (!string.IsNullOrEmpty(item.FNumber)) expParts.Add(item.FNumber);
         if (!string.IsNullOrEmpty(item.ExposureTime)) expParts.Add(item.ExposureTime);
         if (item.Iso.HasValue) expParts.Add($"ISO {item.Iso}");
         if (!string.IsNullOrEmpty(item.FocalLength)) expParts.Add(item.FocalLength);
-        InfoExposure.Text = expParts.Count > 0 ? string.Join("  |  ", expParts) : "";
 
-        InfoRating.Text = item.Rating > 0 ? new string('\u2605', item.Rating) + new string('\u2606', 5 - item.Rating) : "";
+        if (expParts.Count > 0)
+        {
+            InfoExposure.Text = string.Join("  |  ", expParts);
+            InfoExposureGrid.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            InfoExposureGrid.Visibility = Visibility.Collapsed;
+        }
+
+        CameraSeparator.Visibility = hasCamera || hasLens || expParts.Count > 0
+            ? Visibility.Visible : Visibility.Collapsed;
+
+        InfoRating.Text = item.Rating > 0
+            ? new string('\u2605', item.Rating) + new string('\u2606', 5 - item.Rating) : "";
     }
 
     private void NavigateNext()
@@ -227,6 +313,76 @@ public partial class FullscreenViewer : Window
     {
         var item = _vm.GetLastImage();
         if (item is not null) LoadCurrentImage();
+    }
+
+    // Nav hover zones
+    private void NavLeft_MouseEnter(object sender, MouseEventArgs e)
+    {
+        FadeIn(NavLeft);
+        Cursor = Cursors.Arrow;
+    }
+
+    private void NavRight_MouseEnter(object sender, MouseEventArgs e)
+    {
+        FadeIn(NavRight);
+        Cursor = Cursors.Arrow;
+    }
+
+    private void NavZone_MouseLeave(object sender, MouseEventArgs e)
+    {
+        FadeOut(NavLeft);
+        FadeOut(NavRight);
+    }
+
+    private void NavLeft_Click(object sender, MouseButtonEventArgs e)
+    {
+        NavigatePrevious();
+        e.Handled = true;
+    }
+
+    private void NavRight_Click(object sender, MouseButtonEventArgs e)
+    {
+        NavigateNext();
+        e.Handled = true;
+    }
+
+    // Drag-pan when zoomed
+    private void ImageScroller_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (!_isFitToScreen)
+        {
+            _isDragging = true;
+            _dragStart = e.GetPosition(ImageScroller);
+            _dragHOffset = ImageScroller.HorizontalOffset;
+            _dragVOffset = ImageScroller.VerticalOffset;
+            ImageScroller.Cursor = Cursors.Hand;
+            ImageScroller.CaptureMouse();
+            e.Handled = true;
+        }
+    }
+
+    private void ImageScroller_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_isDragging)
+        {
+            _isDragging = false;
+            ImageScroller.ReleaseMouseCapture();
+            ImageScroller.Cursor = Cursors.Arrow;
+            e.Handled = true;
+        }
+    }
+
+    private void ImageScroller_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_isDragging)
+        {
+            var pos = e.GetPosition(ImageScroller);
+            double dx = _dragStart.X - pos.X;
+            double dy = _dragStart.Y - pos.Y;
+            ImageScroller.ScrollToHorizontalOffset(_dragHOffset + dx);
+            ImageScroller.ScrollToVerticalOffset(_dragVOffset + dy);
+            e.Handled = true;
+        }
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)

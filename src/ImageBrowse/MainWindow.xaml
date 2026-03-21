@@ -26,46 +26,85 @@
         <!-- TOOLBAR -->
         <Border Grid.Row="0" Background="{DynamicResource BgSecondaryBrush}"
                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1"
-                Padding="4,4">
+                Padding="8,6">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />  <!-- Toggle folder -->
+                    <ColumnDefinition Width="Auto" />  <!-- Sep -->
                     <ColumnDefinition Width="Auto" />  <!-- Back/Forward -->
+                    <ColumnDefinition Width="Auto" />  <!-- Sep -->
                     <ColumnDefinition Width="*" />     <!-- Address bar -->
+                    <ColumnDefinition Width="Auto" />  <!-- Sep -->
                     <ColumnDefinition Width="Auto" />  <!-- Sort -->
+                    <ColumnDefinition Width="Auto" />  <!-- Sep -->
                     <ColumnDefinition Width="Auto" />  <!-- Thumbnail size -->
-                    <ColumnDefinition Width="Auto" />  <!-- Theme toggle -->
+                    <ColumnDefinition Width="Auto" />  <!-- Sep -->
+                    <ColumnDefinition Width="Auto" />  <!-- Actions -->
                 </Grid.ColumnDefinitions>
 
                 <!-- Folder tree toggle -->
-                <Button Grid.Column="0" Content="&#x1F4C1;" ToolTip="Toggle Folder Tree (Ctrl+Shift+F)"
-                        Style="{DynamicResource ToolbarButton}" FontSize="16" Margin="2,0"
-                        Command="{Binding ToggleFolderTreeCommand}" />
+                <Button Grid.Column="0" ToolTip="Toggle Folder Tree (Ctrl+Shift+F)"
+                        AutomationProperties.Name="Toggle Folder Tree"
+                        Style="{DynamicResource ToolbarButton}" Margin="2,0"
+                        Command="{Binding ToggleFolderTreeCommand}">
+                    <TextBlock Text="&#xED41;" FontFamily="{DynamicResource IconFont}" FontSize="16" />
+                </Button>
+
+                <!-- Separator -->
+                <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource BorderBrush}"
+                           Margin="6,4" VerticalAlignment="Stretch" />
 
                 <!-- Navigation -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="4,0">
-                    <Button x:Name="BackButton" Content="&#x25C0;" ToolTip="Back (Alt+Left)"
-                            Style="{DynamicResource ToolbarButton}" FontSize="14"
-                            Click="BackButton_Click" />
-                    <Button x:Name="ForwardButton" Content="&#x25B6;" ToolTip="Forward (Alt+Right)"
-                            Style="{DynamicResource ToolbarButton}" FontSize="14"
-                            Click="ForwardButton_Click" />
-                    <Button x:Name="UpButton" Content="&#x25B2;" ToolTip="Up (Alt+Up)"
-                            Style="{DynamicResource ToolbarButton}" FontSize="14"
-                            Click="UpButton_Click" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button x:Name="BackButton" ToolTip="Back (Alt+Left)"
+                            AutomationProperties.Name="Navigate Back"
+                            Style="{DynamicResource ToolbarButton}"
+                            Click="BackButton_Click">
+                        <TextBlock Text="&#xE72B;" FontFamily="{DynamicResource IconFont}" FontSize="14" />
+                    </Button>
+                    <Button x:Name="ForwardButton" ToolTip="Forward (Alt+Right)"
+                            AutomationProperties.Name="Navigate Forward"
+                            Style="{DynamicResource ToolbarButton}"
+                            Click="ForwardButton_Click">
+                        <TextBlock Text="&#xE72A;" FontFamily="{DynamicResource IconFont}" FontSize="14" />
+                    </Button>
+                    <Button x:Name="UpButton" ToolTip="Up (Alt+Up)"
+                            AutomationProperties.Name="Navigate Up"
+                            Style="{DynamicResource ToolbarButton}"
+                            Click="UpButton_Click">
+                        <TextBlock Text="&#xE74A;" FontFamily="{DynamicResource IconFont}" FontSize="14" />
+                    </Button>
                 </StackPanel>
 
-                <!-- Address bar -->
-                <TextBox Grid.Column="2" x:Name="AddressBar"
-                         Style="{DynamicResource AddressBar}"
-                         Text="{Binding CurrentPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         KeyDown="AddressBar_KeyDown"
-                         Margin="4,0" VerticalContentAlignment="Center" />
+                <!-- Separator -->
+                <Rectangle Grid.Column="3" Width="1" Fill="{DynamicResource BorderBrush}"
+                           Margin="6,4" VerticalAlignment="Stretch" />
+
+                <!-- Address bar with folder icon -->
+                <Grid Grid.Column="4" Margin="4,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="&#xED25;" FontFamily="{DynamicResource IconFont}"
+                               FontSize="13" Foreground="{DynamicResource FgMutedBrush}"
+                               VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBox Grid.Column="1" x:Name="AddressBar"
+                             AutomationProperties.Name="Folder Path"
+                             Style="{DynamicResource AddressBar}"
+                             Text="{Binding CurrentPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             KeyDown="AddressBar_KeyDown"
+                             VerticalContentAlignment="Center" />
+                </Grid>
+
+                <!-- Separator -->
+                <Rectangle Grid.Column="5" Width="1" Fill="{DynamicResource BorderBrush}"
+                           Margin="6,4" VerticalAlignment="Stretch" />
 
                 <!-- Sort controls -->
-                <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="4,0">
-                    <TextBlock Text="Sort:" VerticalAlignment="Center" Margin="4,0"
-                               Foreground="{DynamicResource FgSecondaryBrush}" FontSize="12" />
+                <StackPanel Grid.Column="6" Orientation="Horizontal" Margin="4,0">
+                    <TextBlock Text="Sort:" VerticalAlignment="Center" Margin="0,0,4,0"
+                               Foreground="{DynamicResource FgMutedBrush}" FontSize="12" />
                     <ComboBox x:Name="SortFieldCombo" Width="120" VerticalAlignment="Center"
                               SelectionChanged="SortFieldCombo_SelectionChanged">
                         <ComboBoxItem Content="Name" Tag="{x:Static models:SortField.FileName}" IsSelected="True" />
@@ -77,43 +116,71 @@
                         <ComboBoxItem Content="File Type" Tag="{x:Static models:SortField.FileType}" />
                         <ComboBoxItem Content="Rating" Tag="{x:Static models:SortField.Rating}" />
                     </ComboBox>
-                    <Button x:Name="SortDirectionButton" Content="&#x25B2;" ToolTip="Toggle Sort Direction"
-                            Style="{DynamicResource ToolbarButton}" FontSize="12" Margin="2,0"
-                            Command="{Binding ToggleSortDirectionCommand}" />
-                    <Button Content="&#x21BA;" ToolTip="Reset to default sort"
-                            Style="{DynamicResource ToolbarButton}" FontSize="14" Margin="2,0"
+                    <Button x:Name="SortDirectionButton" ToolTip="Toggle Sort Direction"
+                            AutomationProperties.Name="Toggle Sort Direction"
+                            Style="{DynamicResource ToolbarButton}" Margin="2,0"
+                            Command="{Binding ToggleSortDirectionCommand}">
+                        <TextBlock x:Name="SortDirectionIcon" Text="&#xE74A;" FontFamily="{DynamicResource IconFont}" FontSize="12" />
+                    </Button>
+                    <Button ToolTip="Reset to default sort"
+                            AutomationProperties.Name="Reset Sort"
+                            Style="{DynamicResource ToolbarButton}" Margin="2,0"
                             Visibility="{Binding HasCustomFolderSort, Converter={StaticResource BoolToVis}}"
-                            Click="ResetSortButton_Click" />
+                            Click="ResetSortButton_Click">
+                        <TextBlock Text="&#xE72C;" FontFamily="{DynamicResource IconFont}" FontSize="14" />
+                    </Button>
                 </StackPanel>
 
-                <!-- Thumbnail size -->
-                <StackPanel Grid.Column="4" Orientation="Horizontal" Margin="4,0">
-                    <Button Content="&#x2212;" ToolTip="Smaller Thumbnails (Ctrl+-)"
-                            Style="{DynamicResource ToolbarButton}" FontSize="14"
-                            Command="{Binding DecreaseThumbnailSizeCommand}" />
-                    <TextBlock VerticalAlignment="Center" Margin="4,0"
-                               Foreground="{DynamicResource FgSecondaryBrush}" FontSize="12">
-                        <Run Text="{Binding ThumbnailSize, Mode=OneWay}" /><Run Text="px" />
-                    </TextBlock>
-                    <Button Content="+" ToolTip="Larger Thumbnails (Ctrl++)"
-                            Style="{DynamicResource ToolbarButton}" FontSize="14"
-                            Command="{Binding IncreaseThumbnailSizeCommand}" />
+                <!-- Separator -->
+                <Rectangle Grid.Column="7" Width="1" Fill="{DynamicResource BorderBrush}"
+                           Margin="6,4" VerticalAlignment="Stretch" />
+
+                <!-- Thumbnail size slider -->
+                <StackPanel Grid.Column="8" Orientation="Horizontal" Margin="4,0"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="&#xE80A;" FontFamily="{DynamicResource IconFont}" FontSize="11"
+                               Foreground="{DynamicResource FgMutedBrush}" VerticalAlignment="Center"
+                               Margin="0,0,4,0" ToolTip="Small thumbnails" />
+                    <Slider x:Name="ThumbnailSlider" Width="80" Minimum="80" Maximum="400"
+                            AutomationProperties.Name="Thumbnail Size"
+                            SmallChange="40" LargeChange="40" IsSnapToTickEnabled="True" TickFrequency="40"
+                            Value="{Binding ThumbnailSize, Mode=TwoWay}"
+                            VerticalAlignment="Center" />
+                    <TextBlock Text="&#xE80A;" FontFamily="{DynamicResource IconFont}" FontSize="16"
+                               Foreground="{DynamicResource FgMutedBrush}" VerticalAlignment="Center"
+                               Margin="4,0,0,0" ToolTip="Large thumbnails" />
                 </StackPanel>
+
+                <!-- Separator -->
+                <Rectangle Grid.Column="9" Width="1" Fill="{DynamicResource BorderBrush}"
+                           Margin="6,4" VerticalAlignment="Stretch" />
 
                 <!-- Theme toggle + Settings + Prescan -->
-                <StackPanel Grid.Column="5" Orientation="Horizontal" Margin="4,0">
-                    <Button Content="&#x263C;" ToolTip="Toggle Theme (Ctrl+T)"
-                            Style="{DynamicResource ToolbarButton}" FontSize="18"
-                            Command="{Binding ToggleThemeCommand}" />
-                    <Button Content="&#x1F50D;" ToolTip="Prescan Folder (Ctrl+Shift+P)"
-                            Style="{DynamicResource ToolbarButton}" FontSize="16" Margin="2,0,0,0"
-                            Click="PrescanButton_Click" />
-                    <Button Content="&#x2699;" ToolTip="Settings (Ctrl+,)"
-                            Style="{DynamicResource ToolbarButton}" FontSize="18" Margin="2,0,0,0"
-                            Click="SettingsButton_Click" />
-                    <Button Content="&#x2139;" ToolTip="About (F1)"
-                            Style="{DynamicResource ToolbarButton}" FontSize="16" Margin="2,0,0,0"
-                            Click="AboutButton_Click" />
+                <StackPanel Grid.Column="10" Orientation="Horizontal" Margin="4,0">
+                    <Button ToolTip="Toggle Theme (Ctrl+T)"
+                            AutomationProperties.Name="Toggle Theme"
+                            Style="{DynamicResource ToolbarButton}"
+                            Command="{Binding ToggleThemeCommand}">
+                        <TextBlock Text="&#xE706;" FontFamily="{DynamicResource IconFont}" FontSize="16" />
+                    </Button>
+                    <Button ToolTip="Prescan Folder (Ctrl+Shift+P)"
+                            AutomationProperties.Name="Prescan Folder"
+                            Style="{DynamicResource ToolbarButton}" Margin="2,0,0,0"
+                            Click="PrescanButton_Click">
+                        <TextBlock Text="&#xE721;" FontFamily="{DynamicResource IconFont}" FontSize="16" />
+                    </Button>
+                    <Button ToolTip="Settings (Ctrl+,)"
+                            AutomationProperties.Name="Settings"
+                            Style="{DynamicResource ToolbarButton}" Margin="2,0,0,0"
+                            Click="SettingsButton_Click">
+                        <TextBlock Text="&#xE713;" FontFamily="{DynamicResource IconFont}" FontSize="16" />
+                    </Button>
+                    <Button ToolTip="About (F1)"
+                            AutomationProperties.Name="About"
+                            Style="{DynamicResource ToolbarButton}" Margin="2,0,0,0"
+                            Click="AboutButton_Click">
+                        <TextBlock Text="&#xE946;" FontFamily="{DynamicResource IconFont}" FontSize="16" />
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
@@ -121,42 +188,59 @@
         <!-- CONTENT AREA -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="FolderTreeColumn" Width="240" MinWidth="120" />
+                <ColumnDefinition x:Name="FolderTreeColumn" Width="240" MinWidth="0" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
             <!-- Folder tree -->
             <TreeView x:Name="FolderTree" Grid.Column="0"
-                      Visibility="{Binding IsFolderTreeVisible, Converter={StaticResource BoolToVis}}"
                       SelectedItemChanged="FolderTree_SelectedItemChanged"
                       Padding="2" FontSize="13">
             </TreeView>
 
             <!-- Splitter -->
-            <GridSplitter Grid.Column="1" Width="4"
+            <GridSplitter x:Name="FolderTreeSplitter" Grid.Column="1" Width="4"
                           Background="{DynamicResource BorderBrush}"
-                          HorizontalAlignment="Center" VerticalAlignment="Stretch"
-                          Visibility="{Binding IsFolderTreeVisible, Converter={StaticResource BoolToVis}}" />
+                          HorizontalAlignment="Center" VerticalAlignment="Stretch" />
 
             <!-- Gallery -->
-            <views:GalleryView Grid.Column="2" DataContext="{Binding}" />
+            <views:GalleryView x:Name="Gallery" Grid.Column="2" DataContext="{Binding}" />
 
-            <!-- Loading overlay -->
-            <Border Grid.Column="2" Background="#80000000"
-                    Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}"
-                    IsHitTestVisible="False">
+            <!-- Loading overlay (fades in after 200ms delay) -->
+            <Border x:Name="LoadingOverlay" Grid.Column="2" Background="#80000000"
+                    Opacity="0" IsHitTestVisible="False" Visibility="Collapsed">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock Text="Loading..." FontSize="18" Foreground="White"
-                               HorizontalAlignment="Center" />
+                    <TextBlock Text="&#x23F3;" FontSize="32" Foreground="White"
+                               HorizontalAlignment="Center" Margin="0,0,0,8" />
+                    <TextBlock Text="Loading..." FontSize="16" Foreground="#CCCCCC"
+                               HorizontalAlignment="Center" FontWeight="Medium" />
                 </StackPanel>
             </Border>
         </Grid>
 
+        <!-- Escape toast -->
+        <Border x:Name="EscapeToast" Grid.Row="1" Opacity="0" IsHitTestVisible="False"
+                Background="#CC000000" CornerRadius="8" Padding="16,8"
+                HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                Margin="0,0,0,12" Panel.ZIndex="100">
+            <TextBlock Text="Press Escape again to exit" FontSize="13"
+                       Foreground="White" FontWeight="Medium" />
+        </Border>
+
         <!-- STATUS BAR -->
-        <StatusBar Grid.Row="2" Padding="8,4">
+        <StatusBar Grid.Row="2" Padding="8,4"
+                   BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
             <StatusBarItem>
                 <TextBlock Text="{Binding StatusText}" FontSize="12" />
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock x:Name="SelectionCountText" FontSize="12"
+                           Foreground="{DynamicResource FgMutedBrush}" Margin="12,0,0,0" />
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock Text="{Binding SelectedItemInfo}" FontSize="12"
+                           Foreground="{DynamicResource FgSecondaryBrush}" Margin="12,0,0,0" />
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
                 <StackPanel Orientation="Horizontal">
@@ -164,7 +248,7 @@
                                Foreground="{DynamicResource AccentBrush}" Cursor="Hand"
                                MouseDown="UpdateNotification_MouseDown"
                                Visibility="Collapsed" />
-                    <TextBlock FontSize="12" Margin="8,0">
+                    <TextBlock FontSize="12" Foreground="{DynamicResource FgMutedBrush}" Margin="8,0">
                         <Run Text="Thumbnail: " />
                         <Run Text="{Binding ThumbnailSize, Mode=OneWay}" />
                         <Run Text="px" />

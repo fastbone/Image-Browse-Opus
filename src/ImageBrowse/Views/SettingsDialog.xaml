@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:models="clr-namespace:ImageBrowse.Models"
         Title="Settings"
-        Width="520" Height="480"
+        Width="560" Height="720"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
@@ -12,76 +12,143 @@
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Startup Folder -->
-        <TextBlock Grid.Row="0" Text="Startup Folder" FontWeight="SemiBold" FontSize="13"
-                   Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,6" />
-        <Grid Grid.Row="1" Margin="0,0,0,16">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBox x:Name="StartupFolderBox"
-                     Style="{DynamicResource AddressBar}"
-                     VerticalContentAlignment="Center" />
-            <Button Grid.Column="1" Content="Browse..." Margin="8,0,0,0"
-                    Style="{DynamicResource ToolbarButton}" Padding="12,6"
-                    Click="BrowseFolder_Click" />
-        </Grid>
-
-        <!-- Default Sort -->
-        <TextBlock Grid.Row="2" Text="Default Sort (when folder has no custom sort)" FontWeight="SemiBold" FontSize="13"
-                   Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,6" />
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,16">
-            <ComboBox x:Name="DefaultSortFieldCombo" Width="140">
-                <ComboBoxItem Content="Name" Tag="{x:Static models:SortField.FileName}" />
-                <ComboBoxItem Content="Date Modified" Tag="{x:Static models:SortField.DateModified}" />
-                <ComboBoxItem Content="Date Created" Tag="{x:Static models:SortField.DateCreated}" />
-                <ComboBoxItem Content="Date Taken" Tag="{x:Static models:SortField.DateTaken}" />
-                <ComboBoxItem Content="File Size" Tag="{x:Static models:SortField.FileSize}" />
-                <ComboBoxItem Content="Dimensions" Tag="{x:Static models:SortField.Dimensions}" />
-                <ComboBoxItem Content="File Type" Tag="{x:Static models:SortField.FileType}" />
-                <ComboBoxItem Content="Rating" Tag="{x:Static models:SortField.Rating}" />
-            </ComboBox>
-            <Button x:Name="DefaultSortDirButton" Margin="8,0,0,0"
-                    Style="{DynamicResource ToolbarButton}" Padding="10,4" FontSize="14"
-                    Click="ToggleDefaultSortDir_Click" />
+        <!-- Dialog header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
+            <TextBlock Text="&#xE713;" FontFamily="{DynamicResource IconFont}" FontSize="22"
+                       Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"
+                       Margin="0,0,12,0" />
+            <TextBlock Text="Settings" FontSize="20" FontWeight="SemiBold"
+                       Foreground="{DynamicResource FgPrimaryBrush}" VerticalAlignment="Center" />
         </StackPanel>
 
-        <!-- Theme -->
-        <TextBlock Grid.Row="4" Text="Theme" FontWeight="SemiBold" FontSize="13"
-                   Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,6" />
-        <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,0,0,16" VerticalAlignment="Top">
-            <RadioButton x:Name="DarkRadio" Content="Dark" Margin="0,0,16,0"
-                         Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" />
-            <RadioButton x:Name="LightRadio" Content="Light"
-                         Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" />
-        </StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,16">
+            <StackPanel>
+                <!-- Startup Folder card -->
+                <Border Background="{DynamicResource BgSurfaceBrush}" CornerRadius="8"
+                        Padding="16" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Startup Folder" FontWeight="SemiBold" FontSize="13"
+                                   Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,8" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="StartupFolderBox"
+                                     Style="{DynamicResource AddressBar}"
+                                     VerticalContentAlignment="Center" />
+                            <Button Grid.Column="1" Content="Browse..." Margin="8,0,0,0"
+                                    Style="{DynamicResource ToolbarButton}" Padding="12,6"
+                                    Click="BrowseFolder_Click" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
 
-        <!-- Behavior -->
-        <TextBlock Grid.Row="6" Text="Behavior" FontWeight="SemiBold" FontSize="13"
-                   Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,6" />
-        <StackPanel Grid.Row="7" Margin="0,0,0,16" VerticalAlignment="Top">
-            <CheckBox x:Name="ConfirmDeleteCheck" Content="Confirm before deleting files"
-                      Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" Margin="0,0,0,8" />
-            <Button Content="Clear Thumbnail Cache"
-                    Style="{DynamicResource ToolbarButton}" Padding="12,6" HorizontalAlignment="Left"
-                    Click="ClearCache_Click" />
-        </StackPanel>
+                <!-- Default Sort card -->
+                <Border Background="{DynamicResource BgSurfaceBrush}" CornerRadius="8"
+                        Padding="16" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Default Sort" FontWeight="SemiBold" FontSize="13"
+                                   Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,4" />
+                        <TextBlock Text="Applied when a folder has no custom sort saved"
+                                   FontSize="11" Foreground="{DynamicResource FgMutedBrush}" Margin="0,0,0,8" />
+                        <StackPanel Orientation="Horizontal">
+                            <ComboBox x:Name="DefaultSortFieldCombo" Width="140">
+                                <ComboBoxItem Content="Name" Tag="{x:Static models:SortField.FileName}" />
+                                <ComboBoxItem Content="Date Modified" Tag="{x:Static models:SortField.DateModified}" />
+                                <ComboBoxItem Content="Date Created" Tag="{x:Static models:SortField.DateCreated}" />
+                                <ComboBoxItem Content="Date Taken" Tag="{x:Static models:SortField.DateTaken}" />
+                                <ComboBoxItem Content="File Size" Tag="{x:Static models:SortField.FileSize}" />
+                                <ComboBoxItem Content="Dimensions" Tag="{x:Static models:SortField.Dimensions}" />
+                                <ComboBoxItem Content="File Type" Tag="{x:Static models:SortField.FileType}" />
+                                <ComboBoxItem Content="Rating" Tag="{x:Static models:SortField.Rating}" />
+                            </ComboBox>
+                            <Button x:Name="DefaultSortDirButton" Margin="8,0,0,0"
+                                    Style="{DynamicResource ToolbarButton}" Padding="10,4" FontSize="14"
+                                    Click="ToggleDefaultSortDir_Click" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Appearance card -->
+                <Border Background="{DynamicResource BgSurfaceBrush}" CornerRadius="8"
+                        Padding="16" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Appearance" FontWeight="SemiBold" FontSize="13"
+                                   Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,8" />
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton x:Name="DarkRadio" Content="Dark" Margin="0,0,16,0"
+                                         Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" />
+                            <RadioButton x:Name="LightRadio" Content="Light"
+                                         Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Behavior card -->
+                <Border Background="{DynamicResource BgSurfaceBrush}" CornerRadius="8"
+                        Padding="16" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Behavior" FontWeight="SemiBold" FontSize="13"
+                                   Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,8" />
+                        <CheckBox x:Name="ConfirmDeleteCheck" Content="Confirm before deleting files"
+                                  Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" Margin="0,0,0,12" />
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Content="Clear Thumbnail Cache"
+                                    Style="{DynamicResource ToolbarButton}" Padding="12,6"
+                                    Click="ClearCache_Click" />
+                            <TextBlock x:Name="CacheSizeText" FontSize="12"
+                                       Foreground="{DynamicResource FgMutedBrush}"
+                                       VerticalAlignment="Center" Margin="12,0,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Shell Integration card -->
+                <Border Background="{DynamicResource BgSurfaceBrush}" CornerRadius="8"
+                        Padding="16" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Shell Integration" FontWeight="SemiBold" FontSize="13"
+                                   Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,8" />
+                        <CheckBox x:Name="ContextMenuCheck"
+                                  Content="Add 'Browse with Image Viewer' to Explorer right-click menu"
+                                  Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13"
+                                  Checked="ContextMenuCheck_Changed" Unchecked="ContextMenuCheck_Changed" />
+                    </StackPanel>
+                </Border>
+
+                <!-- File Associations card -->
+                <Border Background="{DynamicResource BgSurfaceBrush}" CornerRadius="8"
+                        Padding="16" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="File Associations" FontWeight="SemiBold" FontSize="13"
+                                   Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,4" />
+                        <TextBlock Text="Register as an available app for these formats in Windows 'Open With'."
+                                   Foreground="{DynamicResource FgMutedBrush}" FontSize="12" Margin="0,0,0,10"
+                                   TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Button Content="Select All" Style="{DynamicResource ToolbarButton}" Padding="8,4"
+                                    FontSize="12" Click="SelectAll_Click" />
+                            <Button Content="Deselect All" Style="{DynamicResource ToolbarButton}" Padding="8,4"
+                                    FontSize="12" Margin="8,0,0,0" Click="DeselectAll_Click" />
+                            <Button x:Name="ApplyAssocButton" Content="Apply Associations"
+                                    Style="{DynamicResource ToolbarButton}" Padding="8,4"
+                                    FontSize="12" Margin="8,0,0,0" Click="ApplyAssociations_Click" />
+                        </StackPanel>
+                        <StackPanel x:Name="FormatGroupsPanel" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
 
         <!-- Buttons -->
-        <StackPanel Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="OK" Width="80" Margin="0,0,8,0"
-                    Style="{DynamicResource ToolbarButton}" Padding="8,8"
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="OK" Width="90" Margin="0,0,8,0"
+                    Style="{DynamicResource AccentButton}" Padding="12,8"
                     Click="OK_Click" IsDefault="True" />
             <Button Content="Cancel" Width="80"
                     Style="{DynamicResource ToolbarButton}" Padding="8,8"

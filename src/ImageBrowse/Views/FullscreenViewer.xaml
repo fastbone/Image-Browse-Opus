@@ -70,6 +70,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
                         <!-- Play/Pause button -->
@@ -102,8 +103,17 @@
                                    Text="0:00" FontSize="12" Foreground="#CCC"
                                    VerticalAlignment="Center" Margin="8,0" />
 
+                        <!-- Playback speed -->
+                        <Border Grid.Column="4" Background="#44FFFFFF" CornerRadius="4"
+                                Padding="6,2" Margin="4,0" Cursor="Hand"
+                                MouseLeftButtonDown="SpeedButton_Click"
+                                MouseRightButtonDown="SpeedButton_RightClick">
+                            <TextBlock x:Name="SpeedText" Text="1.0x" FontSize="11"
+                                       Foreground="White" VerticalAlignment="Center" />
+                        </Border>
+
                         <!-- Volume -->
-                        <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
                             <Button x:Name="MuteButton" Background="Transparent" BorderThickness="0"
                                     Width="30" Height="30" Cursor="Hand" Click="Mute_Click">
                                 <TextBlock x:Name="VolumeIcon" Text="&#xE767;"
@@ -115,6 +125,25 @@
                                     ValueChanged="VolumeSlider_ValueChanged" />
                         </StackPanel>
                     </Grid>
+                </Border>
+
+                <!-- Video mini-map for interactive zoom (inside VideoView for airspace) -->
+                <Border x:Name="VideoMiniMapPanel" Visibility="Collapsed"
+                        Background="#AA000000" CornerRadius="8"
+                        Width="200" Height="130" Padding="4"
+                        Margin="16,16,0,0"
+                        HorizontalAlignment="Left" VerticalAlignment="Top"
+                        Cursor="Hand"
+                        MouseLeftButtonDown="VideoMiniMap_MouseDown"
+                        MouseMove="VideoMiniMap_MouseMove"
+                        MouseLeftButtonUp="VideoMiniMap_MouseUp">
+                    <Canvas x:Name="VideoMiniMapCanvas" ClipToBounds="True">
+                        <Image x:Name="VideoMiniMapImage" Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="LowQuality" />
+                        <Rectangle x:Name="VideoMiniMapViewport"
+                                   Stroke="#CCFFFFFF" StrokeThickness="1.5"
+                                   Fill="#22FFFFFF" RadiusX="1" RadiusY="1" />
+                    </Canvas>
                 </Border>
 
                 <!-- Video nav arrows (inside VideoView for airspace) -->

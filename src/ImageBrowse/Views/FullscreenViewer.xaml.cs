@@ -55,6 +55,15 @@ public partial class FullscreenViewer : Window
     private readonly DispatcherTimer _controlBarFadeTimer;
     private bool _controlBarVisible;
 
+    private double _videoZoomLevel = 1.0;
+    private double _videoCropX, _videoCropY;
+    private uint _videoPixelW, _videoPixelH;
+    private bool _videoZoomActive;
+    private bool _videoMiniMapDragging;
+
+    private static readonly float[] PlaybackSpeeds = [0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f];
+    private int _speedIndex = 2; // 1.0x
+
     public FullscreenViewer(MainViewModel vm)
     {
         InitializeComponent();
@@ -230,6 +239,10 @@ public partial class FullscreenViewer : Window
 
             if (_mediaPlayer.Volume != (int)VolumeSlider.Value)
                 _mediaPlayer.Volume = (int)VolumeSlider.Value;
+
+            _speedIndex = 2;
+            _mediaPlayer.SetRate(1.0f);
+            SpeedText.Text = "1.0x";
         }
         catch (Exception ex)
         {
@@ -243,6 +256,7 @@ public partial class FullscreenViewer : Window
     {
         if (!_isVideoActive) return;
         _isVideoActive = false;
+        ResetVideoZoom();
         VideoView.Visibility = Visibility.Collapsed;
         ImageScroller.Visibility = Visibility.Visible;
         NavLeft.Visibility = Visibility.Visible;
@@ -254,6 +268,7 @@ public partial class FullscreenViewer : Window
     {
         if (_mediaPlayer is null) return;
         _videoPositionTimer.Stop();
+        ResetVideoZoom();
 
         try
         {
@@ -270,6 +285,9 @@ public partial class FullscreenViewer : Window
         catch { }
 
         VideoView.MediaPlayer = null;
+
+        _speedIndex = 2;
+        _mediaPlayer?.SetRate(1.0f);
     }
 
     private void ToggleVideoPlayPause()
@@ -347,11 +365,11 @@ public partial class FullscreenViewer : Window
 
     private void ShowVideoControlBar()
     {
+        _controlBarFadeTimer.Stop();
+        _controlBarFadeTimer.Start();
         if (_controlBarVisible) return;
         _controlBarVisible = true;
         FadeIn(VideoControlBar);
-        _controlBarFadeTimer.Stop();
-        _controlBarFadeTimer.Start();
     }
 
     private void HideVideoControlBar()
@@ -377,6 +395,175 @@ public partial class FullscreenViewer : Window
     {
         FadeOut(VideoNavLeft);
         FadeOut(VideoNavRight);
+    }
+
+    private void ToggleVideoZoom()
+    {
+        if (_mediaPlayer is null) return;
+
+        if (_videoZoomActive)
+        {
+            ResetVideoZoom();
+            return;
+        }
+
+        uint pw = 0, ph = 0;
+        if (!_mediaPlayer.Size(0, ref pw, ref ph) || pw == 0 || ph == 0)
+            return;
+        _videoPixelW = pw;
+        _videoPixelH = ph;
+
+        _videoZoomActive = true;
+        _videoZoomLevel = 2.0;
+        _videoCropX = _videoPixelW / 4.0;
+        _videoCropY = _videoPixelH / 4.0;
+        ApplyVideoZoom(_videoZoomLevel);
+
+        VideoMiniMapImage.Source = _vm.SelectedItem?.Thumbnail;
+        VideoMiniMapPanel.Visibility = Visibility.Visible;
+    }
+
+    private void ApplyVideoZoom(double newZoom)
+    {
+        if (_mediaPlayer is null || _videoPixelW == 0) return;
+
+        _videoZoomLevel = Math.Clamp(newZoom, 1.0, 8.0);
+
+        if (_videoZoomLevel <= 1.01)
+        {
+            ResetVideoZoom();
+            return;
+        }
+
+        double cropW = _videoPixelW / _videoZoomLevel;
+        double cropH = _videoPixelH / _videoZoomLevel;
+
+        _videoCropX = Math.Clamp(_videoCropX, 0, _videoPixelW - cropW);
+        _videoCropY = Math.Clamp(_videoCropY, 0, _videoPixelH - cropH);
+
+        int cw = (int)Math.Round(cropW);
+        int ch = (int)Math.Round(cropH);
+        int cx = (int)Math.Round(_videoCropX);
+        int cy = (int)Math.Round(_videoCropY);
+
+        _mediaPlayer.CropGeometry = $"{cw}x{ch}+{cx}+{cy}";
+        UpdateVideoMiniMap();
+    }
+
+    private void ResetVideoZoom()
+    {
+        _videoZoomActive = false;
+        _videoZoomLevel = 1.0;
+        _videoCropX = 0;
+        _videoCropY = 0;
+        if (_mediaPlayer is not null)
+            _mediaPlayer.CropGeometry = "";
+        VideoMiniMapPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private void UpdateVideoMiniMap()
+    {
+        if (_videoPixelW == 0 || _videoPixelH == 0) return;
+
+        double canvasW = VideoMiniMapCanvas.ActualWidth;
+        double canvasH = VideoMiniMapCanvas.ActualHeight;
+        if (canvasW <= 0 || canvasH <= 0) return;
+
+        double scale = Math.Min(canvasW / _videoPixelW, canvasH / _videoPixelH);
+        double mapW = _videoPixelW * scale;
+        double mapH = _videoPixelH * scale;
+        double mapX = (canvasW - mapW) / 2;
+        double mapY = (canvasH - mapH) / 2;
+
+        Canvas.SetLeft(VideoMiniMapImage, mapX);
+        Canvas.SetTop(VideoMiniMapImage, mapY);
+        VideoMiniMapImage.Width = mapW;
+        VideoMiniMapImage.Height = mapH;
+
+        double cropW = _videoPixelW / _videoZoomLevel;
+        double cropH = _videoPixelH / _videoZoomLevel;
+
+        double vpX = _videoCropX / _videoPixelW * mapW + mapX;
+        double vpY = _videoCropY / _videoPixelH * mapH + mapY;
+        double vpW = cropW / _videoPixelW * mapW;
+        double vpH = cropH / _videoPixelH * mapH;
+
+        Canvas.SetLeft(VideoMiniMapViewport, vpX);
+        Canvas.SetTop(VideoMiniMapViewport, vpY);
+        VideoMiniMapViewport.Width = Math.Max(vpW, 4);
+        VideoMiniMapViewport.Height = Math.Max(vpH, 4);
+    }
+
+    private void VideoMiniMap_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        _videoMiniMapDragging = true;
+        VideoMiniMapPanel.CaptureMouse();
+        VideoMiniMapNavigateTo(e.GetPosition(VideoMiniMapCanvas));
+        e.Handled = true;
+    }
+
+    private void VideoMiniMap_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_videoMiniMapDragging)
+        {
+            VideoMiniMapNavigateTo(e.GetPosition(VideoMiniMapCanvas));
+            e.Handled = true;
+        }
+    }
+
+    private void VideoMiniMap_MouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_videoMiniMapDragging)
+        {
+            _videoMiniMapDragging = false;
+            VideoMiniMapPanel.ReleaseMouseCapture();
+            e.Handled = true;
+        }
+    }
+
+    private void VideoMiniMapNavigateTo(Point canvasPos)
+    {
+        if (_videoPixelW == 0 || _videoPixelH == 0) return;
+
+        double canvasW = VideoMiniMapCanvas.ActualWidth;
+        double canvasH = VideoMiniMapCanvas.ActualHeight;
+        double scale = Math.Min(canvasW / _videoPixelW, canvasH / _videoPixelH);
+        double mapW = _videoPixelW * scale;
+        double mapH = _videoPixelH * scale;
+        double mapX = (canvasW - mapW) / 2;
+        double mapY = (canvasH - mapH) / 2;
+
+        double relX = (canvasPos.X - mapX) / mapW;
+        double relY = (canvasPos.Y - mapY) / mapH;
+        relX = Math.Clamp(relX, 0, 1);
+        relY = Math.Clamp(relY, 0, 1);
+
+        double cropW = _videoPixelW / _videoZoomLevel;
+        double cropH = _videoPixelH / _videoZoomLevel;
+        _videoCropX = relX * _videoPixelW - cropW / 2;
+        _videoCropY = relY * _videoPixelH - cropH / 2;
+
+        ApplyVideoZoom(_videoZoomLevel);
+    }
+
+    private void CyclePlaybackSpeed(int direction)
+    {
+        if (_mediaPlayer is null) return;
+        _speedIndex = Math.Clamp(_speedIndex + direction, 0, PlaybackSpeeds.Length - 1);
+        _mediaPlayer.SetRate(PlaybackSpeeds[_speedIndex]);
+        SpeedText.Text = $"{PlaybackSpeeds[_speedIndex]:0.##}x";
+    }
+
+    private void SpeedButton_Click(object sender, MouseButtonEventArgs e)
+    {
+        CyclePlaybackSpeed(1);
+        e.Handled = true;
+    }
+
+    private void SpeedButton_RightClick(object sender, MouseButtonEventArgs e)
+    {
+        CyclePlaybackSpeed(-1);
+        e.Handled = true;
     }
 
     private void ResetZoom()
@@ -659,16 +846,8 @@ public partial class FullscreenViewer : Window
                 break;
 
             case Key.Space:
-                if (_isVideoActive)
-                {
-                    ToggleVideoPlayPause();
-                    e.Handled = true;
-                }
-                else
-                {
-                    NavigateNext();
-                    e.Handled = true;
-                }
+                NavigateNext();
+                e.Handled = true;
                 break;
 
             case Key.Left:
@@ -777,6 +956,24 @@ public partial class FullscreenViewer : Window
                 ToggleVideoPlayPause();
                 e.Handled = true;
                 break;
+            case Key.Left:
+            {
+                long delta = Keyboard.Modifiers == ModifierKeys.Shift ? 30000 : 5000;
+                _mediaPlayer.Time = Math.Max(_mediaPlayer.Time - delta, 0);
+                ShowVideoControlBar();
+                e.Handled = true;
+                break;
+            }
+            case Key.Right:
+            {
+                long delta = Keyboard.Modifiers == ModifierKeys.Shift ? 30000 : 5000;
+                long length = _mediaPlayer.Length;
+                if (length > 0)
+                    _mediaPlayer.Time = Math.Min(_mediaPlayer.Time + delta, length);
+                ShowVideoControlBar();
+                e.Handled = true;
+                break;
+            }
             case Key.Up:
                 _mediaPlayer.Volume = Math.Min(_mediaPlayer.Volume + 5, 100);
                 VolumeSlider.Value = _mediaPlayer.Volume;
@@ -790,6 +987,28 @@ public partial class FullscreenViewer : Window
             case Key.M:
                 _mediaPlayer.Mute = !_mediaPlayer.Mute;
                 VolumeIcon.Text = _mediaPlayer.Mute ? "\uE74F" : "\uE767";
+                e.Handled = true;
+                break;
+            case Key.Z:
+                ToggleVideoZoom();
+                e.Handled = true;
+                break;
+            case Key.N:
+                NavigateNext();
+                e.Handled = true;
+                break;
+            case Key.P:
+                NavigatePrevious();
+                e.Handled = true;
+                break;
+            case Key.OemOpenBrackets:
+                CyclePlaybackSpeed(-1);
+                ShowVideoControlBar();
+                e.Handled = true;
+                break;
+            case Key.OemCloseBrackets:
+                CyclePlaybackSpeed(1);
+                ShowVideoControlBar();
                 e.Handled = true;
                 break;
         }
@@ -875,6 +1094,14 @@ public partial class FullscreenViewer : Window
 
     private void Window_MouseWheel(object sender, MouseWheelEventArgs e)
     {
+        if (_isVideoActive && _videoZoomActive)
+        {
+            double factor = e.Delta > 0 ? (1 + ZoomStep) : (1 / (1 + ZoomStep));
+            ApplyVideoZoom(_videoZoomLevel * factor);
+            e.Handled = true;
+            return;
+        }
+
         if (Keyboard.Modifiers == ModifierKeys.None)
         {
             double factor = e.Delta > 0 ? (1 + ZoomStep) : (1 / (1 + ZoomStep));
@@ -892,7 +1119,7 @@ public partial class FullscreenViewer : Window
             _cursorTimer.Stop();
             _cursorTimer.Start();
 
-            if (_isVideoActive && pos.Y > ActualHeight - 80)
+            if (_isVideoActive)
             {
                 ShowVideoControlBar();
             }

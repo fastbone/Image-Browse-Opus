@@ -183,13 +183,68 @@ public sealed class FolderThumbnailService : IDisposable
         return rtb;
     }
 
+    private static readonly HashSet<string> WpfNativeExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".tif", ".ico", ".jfif"
+    };
+
     private static BitmapSource? LoadThumbnail(string filePath, int maxDim)
+    {
+        var ext = Path.GetExtension(filePath);
+        if (WpfNativeExtensions.Contains(ext))
+        {
+            var wpfResult = LoadThumbnailWithWpf(filePath, maxDim);
+            if (wpfResult is not null)
+                return wpfResult;
+        }
+
+        return LoadThumbnailWithMagick(filePath, maxDim);
+    }
+
+    private static BitmapSource? LoadThumbnailWithWpf(string filePath, int maxDim)
     {
         try
         {
-            using var image = new ImageMagick.MagickImage(filePath);
+            int orientation = ExifOrientationService.ReadOrientation(filePath);
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.DecodePixelWidth = maxDim;
+            bitmap.UriSource = new Uri(filePath, UriKind.Absolute);
+            bitmap.EndInit();
+            bitmap.Freeze();
+            return ExifOrientationService.ApplyOrientation(bitmap, orientation);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static BitmapSource? LoadThumbnailWithMagick(string filePath, int maxDim)
+    {
+        try
+        {
+            var settings = new ImageMagick.MagickReadSettings();
+            var ext = Path.GetExtension(filePath).ToUpperInvariant();
+            if (ext is ".JPG" or ".JPEG" or ".JFIF")
+            {
+                settings.SetDefines(new ImageMagick.Formats.JpegReadDefines
+                {
+                    Size = new ImageMagick.MagickGeometry((uint)maxDim * 2, (uint)maxDim * 2)
+                });
+            }
+
+            using var image = new ImageMagick.MagickImage(filePath, settings);
             image.AutoOrient();
             image.Thumbnail((uint)maxDim, (uint)maxDim);
+
+            var colorProfile = image.GetColorProfile();
+            if (colorProfile is not null)
+                image.TransformColorSpace(colorProfile, ImageMagick.ColorProfiles.SRGB);
+            if (image.ColorSpace == ImageMagick.ColorSpace.CMYK)
+                image.ColorSpace = ImageMagick.ColorSpace.sRGB;
+
             var data = image.ToByteArray(ImageMagick.MagickFormat.Png);
             using var stream = new MemoryStream(data);
             var bmp = new BitmapImage();

@@ -12,6 +12,7 @@ namespace ImageBrowse.Views;
 public partial class FullscreenViewer : Window
 {
     private readonly MainViewModel _vm;
+    private readonly ImagePrefetchService _prefetch;
     private double _zoomLevel = 1.0;
     private bool _infoVisible;
     private bool _isFitToScreen = true;
@@ -28,6 +29,7 @@ public partial class FullscreenViewer : Window
     {
         InitializeComponent();
         _vm = vm;
+        _prefetch = new ImagePrefetchService(new ImageLoadingService());
 
         _cursorTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         _cursorTimer.Tick += (_, _) =>
@@ -53,18 +55,30 @@ public partial class FullscreenViewer : Window
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        int screenMax = (int)Math.Max(ActualWidth > 0 ? ActualWidth : SystemParameters.PrimaryScreenWidth,
+                                       ActualHeight > 0 ? ActualHeight : SystemParameters.PrimaryScreenHeight);
+        _prefetch.Configure(screenMax * 2, idx =>
+        {
+            if (idx < 0 || idx >= _vm.SortedImages.Count)
+                return ("", true);
+            var i = _vm.SortedImages[idx];
+            return (i.FilePath, i.IsFolder);
+        });
+
         LoadCurrentImage();
         _cursorTimer.Start();
     }
 
-    private void LoadCurrentImage()
+    private async void LoadCurrentImage()
     {
         var item = _vm.SelectedItem;
         if (item is null) return;
 
-        int screenMax = (int)Math.Max(SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight);
-        var image = _vm.LoadScreenImage(item.FilePath, screenMax * 2);
+        var cached = _prefetch.GetCached(_vm.SelectedIndex);
+        var image = cached ?? await _prefetch.GetOrLoadAsync(_vm.SelectedIndex);
         DisplayImage.Source = image;
+
+        _prefetch.UpdatePosition(_vm.SelectedIndex, _vm.SortedImages.Count);
 
         ResetZoom();
         UpdateInfo(item);
@@ -256,6 +270,11 @@ public partial class FullscreenViewer : Window
                 e.Handled = true;
                 break;
 
+            case Key.Delete:
+                DeleteCurrentImage();
+                e.Handled = true;
+                break;
+
             case Key.Q:
                 if (_vm.SelectedItem is not null)
                 {
@@ -293,6 +312,31 @@ public partial class FullscreenViewer : Window
         }
     }
 
+    private void DeleteCurrentImage()
+    {
+        var item = _vm.SelectedItem;
+        if (item is null || item.IsFolder) return;
+
+        if (FileOperationService.MoveToRecycleBin(item.FilePath))
+        {
+            _prefetch.Invalidate(_vm.SelectedIndex);
+            int currentIdx = _vm.SelectedIndex;
+            _vm.RemoveImage(item);
+
+            if (_vm.SortedImages.Count == 0 || _vm.SortedImages.All(i => i.IsFolder))
+            {
+                Close();
+                return;
+            }
+
+            var next = _vm.GetNextImage() ?? _vm.GetPreviousImage();
+            if (next is not null)
+                LoadCurrentImage();
+            else
+                Close();
+        }
+    }
+
     private void RotateCurrentImage()
     {
         var item = _vm.SelectedItem;
@@ -307,6 +351,7 @@ public partial class FullscreenViewer : Window
             item.DateModified = fi.LastWriteTime;
             item.FileSize = fi.Length;
             _vm.RefreshThumbnail(item);
+            _prefetch.Invalidate(_vm.SelectedIndex);
             LoadCurrentImage();
             if (_infoVisible) UpdateInfo(item);
         }
@@ -378,5 +423,11 @@ public partial class FullscreenViewer : Window
     {
         var animation = new DoubleAnimation(0.0, TimeSpan.FromMilliseconds(300));
         element.BeginAnimation(OpacityProperty, animation);
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _prefetch.Dispose();
+        base.OnClosed(e);
     }
 }

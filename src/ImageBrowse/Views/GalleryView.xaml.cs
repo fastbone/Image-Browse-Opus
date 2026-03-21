@@ -84,7 +84,7 @@ public partial class GalleryView : UserControl
                 break;
 
             case Key.Delete:
-                // TODO: Move to trash
+                DeleteSelectedImage();
                 e.Handled = true;
                 break;
         }
@@ -119,6 +119,26 @@ public partial class GalleryView : UserControl
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Rotation failed: {ex.Message}");
+        }
+    }
+
+    private void DeleteSelectedImage()
+    {
+        if (ViewModel is null) return;
+        var item = ViewModel.SelectedItem;
+        if (item is null || item.IsFolder) return;
+
+        if (FileOperationService.MoveToRecycleBin(item.FilePath))
+        {
+            int currentIdx = ViewModel.SelectedIndex;
+            ViewModel.RemoveImage(item);
+
+            if (ViewModel.SortedImages.Count > 0)
+            {
+                int newIdx = Math.Min(currentIdx, ViewModel.SortedImages.Count - 1);
+                ViewModel.SelectedIndex = newIdx;
+                ViewModel.SelectedItem = ViewModel.SortedImages[newIdx];
+            }
         }
     }
 

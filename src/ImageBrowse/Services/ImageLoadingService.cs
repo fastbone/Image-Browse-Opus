@@ -108,6 +108,12 @@ public sealed class ImageLoadingService
 
             image.AutoOrient();
 
+            var colorProfile = image.GetColorProfile();
+            if (colorProfile is not null)
+                image.TransformColorSpace(colorProfile, ColorProfiles.SRGB);
+            if (image.ColorSpace == ColorSpace.CMYK)
+                image.ColorSpace = ColorSpace.sRGB;
+
             var data = image.ToByteArray(MagickFormat.Png);
             using var stream = new MemoryStream(data);
             var bitmap = new BitmapImage();

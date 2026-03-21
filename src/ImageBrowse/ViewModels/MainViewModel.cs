@@ -491,6 +491,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _folderThumbnailService.RequestThumbnail(parentDir, folderItem.DateModified);
     }
 
+    public void RemoveImage(ImageItem item)
+    {
+        _db.DeleteThumbnail(item.FilePath);
+        _allImages.Remove(item);
+        SortedImages.Remove(item);
+
+        int imageCount = _allImages.Count(i => !i.IsFolder);
+        int folderCount = _allImages.Count(i => i.IsFolder);
+        StatusText = folderCount > 0
+            ? $"{folderCount:N0} folder{(folderCount != 1 ? "s" : "")}, {imageCount:N0} image{(imageCount != 1 ? "s" : "")}"
+            : $"{imageCount:N0} image{(imageCount != 1 ? "s" : "")}";
+    }
+
     public System.Windows.Media.Imaging.BitmapSource? LoadFullImage(string filePath)
     {
         return _imageLoadingService.LoadFullImage(filePath);

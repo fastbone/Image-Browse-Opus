@@ -10,12 +10,19 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
+using System.Runtime.InteropServices;
 using System.Windows.Threading;
 
 namespace ImageBrowse.Views;
 
 public partial class FullscreenViewer : Window
 {
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out POINT lpPoint);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT { public int X, Y; }
+
     private readonly MainViewModel _vm;
     private readonly ImagePrefetchService _prefetch;
     private double _zoomLevel = 1.0;
@@ -93,7 +100,8 @@ public partial class FullscreenViewer : Window
         _videoMousePollTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         _videoMousePollTimer.Tick += (_, _) =>
         {
-            var pos = Mouse.GetPosition(this);
+            if (!GetCursorPos(out var screenPt)) return;
+            var pos = PointFromScreen(new Point(screenPt.X, screenPt.Y));
             if (Math.Abs(pos.X - _lastMousePos.X) > 3 || Math.Abs(pos.Y - _lastMousePos.Y) > 3)
             {
                 Cursor = Cursors.Arrow;

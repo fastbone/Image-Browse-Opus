@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Browse — Lightweight &amp; Blazing Fast Media Browser</title>
+<meta name="description" content="A lightweight, blazing-fast image and video browser for Windows. Browse 80+ image formats and 16 video formats with a virtualized gallery, fullscreen viewer, and instant cached thumbnails.">
+<meta property="og:title" content="Image Browse — Lightweight & Blazing Fast Media Browser">
+<meta property="og:description" content="Browse 80+ image formats and 16 video formats. Virtualized gallery, fullscreen viewer, star ratings, and instant cached thumbnails.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://fastbone.github.io/Image-Browse-Opus/">
+<meta name="theme-color" content="#E94560">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Base ───────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#0a0a0f;color:#eaeaea;line-height:1.6;overflow-x:hidden}
+a{color:#E94560;text-decoration:none;transition:color .2s}
+a:hover{color:#FF6B81}
+img{max-width:100%;display:block}
+
+/* ── Utilities ──────────────────────────────────────── */
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+.accent{color:#E94560}
+.muted{color:#8888A0}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* ── Reveal animation ───────────────────────────────── */
+.js .reveal{opacity:0;transform:translateY(32px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
+.js .reveal.visible{opacity:1;transform:translateY(0)}
+@media(prefers-reduced-motion:reduce){.js .reveal{opacity:1;transform:none;transition:none}}
+
+/* ── Navigation ─────────────────────────────────────── */
+.site-nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 0;transition:background .3s,box-shadow .3s}
+.site-nav.scrolled{background:rgba(10,10,15,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 1px 0 rgba(255,255,255,.06)}
+.site-nav .container{display:flex;align-items:center;justify-content:space-between}
+.nav-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;color:#eaeaea}
+.nav-logo{width:32px;height:32px;background:linear-gradient(135deg,#E94560,#FF6B81);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;font-weight:900}
+.nav-links{display:flex;gap:28px;align-items:center}
+.nav-links a{color:#A0A0B0;font-size:14px;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:#eaeaea}
+.nav-cta{background:#E94560;color:#fff !important;padding:8px 20px;border-radius:8px;font-weight:600;font-size:14px;transition:background .2s,transform .15s}
+.nav-cta:hover{background:#FF6B81;transform:translateY(-1px)}
+.nav-mobile-btn{display:none;background:none;border:none;color:#eaeaea;font-size:24px;cursor:pointer;padding:4px}
+@media(max-width:768px){
+  .nav-links{display:none}
+  .nav-links.open{display:flex;flex-direction:column;position:absolute;top:60px;left:0;right:0;background:rgba(10,10,15,.97);padding:20px 24px;gap:16px;backdrop-filter:blur(12px)}
+  .nav-mobile-btn{display:block}
+}
+
+/* ── Hero ───────────────────────────────────────────── */
+.hero{padding:140px 0 80px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40%;left:50%;transform:translateX(-50%);width:800px;height:800px;background:radial-gradient(circle,rgba(233,69,96,.12) 0%,transparent 70%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(233,69,96,.1);border:1px solid rgba(233,69,96,.25);color:#FF6B81;padding:6px 16px;border-radius:100px;font-size:13px;font-weight:600;margin-bottom:24px}
+.hero-badge .dot{width:6px;height:6px;background:#E94560;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero h1{font-size:clamp(36px,6vw,72px);font-weight:900;line-height:1.05;letter-spacing:-.03em;margin-bottom:20px;background:linear-gradient(to bottom,#fff,#A0A0B0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero h1 .accent-word{-webkit-text-fill-color:#E94560}
+.hero-sub{font-size:clamp(16px,2vw,20px);color:#A0A0B0;max-width:600px;margin:0 auto 36px;line-height:1.5}
+.hero-buttons{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:64px}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:#E94560;color:#fff;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;border:none;cursor:pointer;transition:background .2s,transform .15s,box-shadow .2s;box-shadow:0 0 0 0 rgba(233,69,96,0)}
+.btn-primary:hover{background:#FF6B81;transform:translateY(-2px);box-shadow:0 8px 30px rgba(233,69,96,.3);color:#fff}
+.btn-secondary{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);color:#eaeaea;padding:14px 32px;border-radius:12px;font-weight:600;font-size:16px;border:1px solid rgba(255,255,255,.1);cursor:pointer;transition:background .2s,transform .15s}
+.btn-secondary:hover{background:rgba(255,255,255,.1);transform:translateY(-2px);color:#eaeaea}
+
+/* ── App Mockup ─────────────────────────────────────── */
+.mockup-wrapper{max-width:1060px;margin:0 auto;perspective:1200px}
+.mockup-frame{background:#111116;border-radius:12px;border:1px solid #2A2A3A;overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.03);transform:rotateX(2deg);transition:transform .5s cubic-bezier(.16,1,.3,1)}
+.mockup-frame:hover{transform:rotateX(0deg)}
+.mockup-titlebar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#18181E;border-bottom:1px solid #2A2A3A}
+.mockup-dot{width:12px;height:12px;border-radius:50%}
+.mockup-dot.r{background:#ff5f57}.mockup-dot.y{background:#ffbd2e}.mockup-dot.g{background:#28ca41}
+.mockup-title{color:#8888A0;font-size:12px;margin-left:8px;font-weight:500}
+.mockup-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#18181E;border-bottom:1px solid #2A2A3A}
+.tb-btn{width:28px;height:28px;background:#252530;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#8888A0;font-size:12px;flex-shrink:0}
+.tb-sep{width:1px;height:20px;background:#2A2A3A;margin:0 4px;flex-shrink:0}
+.tb-breadcrumb{flex:1;height:28px;background:#1E1E26;border:1px solid #2A2A3A;border-radius:6px;display:flex;align-items:center;padding:0 10px;gap:4px;min-width:0}
+.tb-crumb{color:#A0A0B0;font-size:11px;white-space:nowrap}
+.tb-crumb-sep{color:#3A3A4A;font-size:11px}
+.tb-crumb.active{color:#eaeaea}
+.tb-sort-group{display:flex;background:#1E1E26;border:1px solid #2A2A3A;border-radius:6px;overflow:hidden;flex-shrink:0}
+.tb-sort{padding:4px 10px;font-size:10px;color:#8888A0;white-space:nowrap}
+.tb-sort.active{background:#E94560;color:#fff}
+.tb-slider{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.tb-slider-track{width:60px;height:4px;background:#2A2A3A;border-radius:2px;position:relative}
+.tb-slider-fill{position:absolute;left:0;top:0;height:100%;width:45%;background:#E94560;border-radius:2px}
+.tb-slider-thumb{position:absolute;top:50%;left:45%;transform:translate(-50%,-50%);width:10px;height:10px;background:#eaeaea;border-radius:50%}
+.tb-slider-icon{color:#8888A0;font-size:10px}
+.mockup-body{display:flex;min-height:340px}
+.mockup-sidebar{width:200px;background:#111116;border-right:1px solid #2A2A3A;padding:8px 0;flex-shrink:0}
+.sb-item{display:flex;align-items:center;gap:8px;padding:5px 14px;font-size:12px;color:#A0A0B0;cursor:default}
+.sb-item.active{background:#2C3A5A;color:#eaeaea;border-left:2px solid #E94560;padding-left:12px}
+.sb-item .sb-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.sb-indent{padding-left:32px}
+.mockup-gallery{flex:1;padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;align-content:start;overflow:hidden}
+.gal-thumb{aspect-ratio:1;border-radius:8px;position:relative;overflow:hidden}
+.gal-thumb .thumb-img{width:100%;height:100%;object-fit:cover;display:block}
+.gal-thumb-stars{position:absolute;bottom:4px;left:6px;font-size:8px;color:#FACC15;letter-spacing:1px}
+.gal-thumb-tag{position:absolute;top:4px;right:4px;width:16px;height:16px;background:#E94560;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff}
+.gal-thumb-video{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.gal-thumb-video span{width:28px;height:28px;background:rgba(0,0,0,.6);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px}
+.gal-thumb-dur{position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.8);padding:2px 6px;border-radius:3px;font-size:8px;color:#fff}
+.gal-fname{font-size:9px;color:#A0A0B0;text-align:center;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gal-selected{outline:2px solid #E94560;outline-offset:-2px}
+.mockup-statusbar{display:flex;justify-content:space-between;padding:6px 14px;background:#111116;border-top:1px solid #2A2A3A;font-size:10px;color:#8888A0}
+@media(max-width:768px){
+  .mockup-sidebar{display:none}
+  .mockup-gallery{grid-template-columns:repeat(auto-fill,minmax(72px,1fr))}
+  .mockup-toolbar .tb-sort-group,.mockup-toolbar .tb-slider{display:none}
+}
+
+/* ── Stats Bar ──────────────────────────────────────── */
+.stats{padding:60px 0;border-top:1px solid rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.05)}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;text-align:center}
+.stat-num{font-family:'JetBrains Mono',monospace;font-size:clamp(28px,4vw,48px);font-weight:700;color:#fff;line-height:1.1}
+.stat-num .accent{color:#E94560}
+.stat-label{font-size:14px;color:#8888A0;margin-top:4px}
+@media(max-width:768px){.stats-grid{grid-template-columns:repeat(2,1fr);gap:24px}}
+
+/* ── Section headers ────────────────────────────────── */
+.section{padding:100px 0}
+.section-label{display:inline-flex;align-items:center;gap:8px;color:#E94560;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
+.section-title{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.15;letter-spacing:-.02em;margin-bottom:16px}
+.section-desc{font-size:17px;color:#A0A0B0;max-width:560px;line-height:1.6}
+.section-center{text-align:center}.section-center .section-desc{margin:0 auto}
+
+/* ── Feature Grid ───────────────────────────────────── */
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:56px}
+.feature-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:32px;transition:background .3s,border-color .3s,transform .3s}
+.feature-card:hover{background:rgba(233,69,96,.04);border-color:rgba(233,69,96,.2);transform:translateY(-4px)}
+.feature-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;font-size:22px}
+.fi-gallery{background:rgba(74,222,128,.1);color:#4ADE80}
+.fi-viewer{background:rgba(96,165,250,.1);color:#60A5FA}
+.fi-video{background:rgba(251,146,60,.1);color:#FB923C}
+.fi-organize{background:rgba(250,204,21,.1);color:#FACC15}
+.fi-formats{background:rgba(233,69,96,.1);color:#E94560}
+.fi-perf{background:rgba(168,85,247,.1);color:#A855F7}
+.feature-card h3{font-size:18px;font-weight:700;margin-bottom:8px}
+.feature-card p{font-size:14px;color:#A0A0B0;line-height:1.6}
+@media(max-width:900px){.features-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.features-grid{grid-template-columns:1fr}}
+
+/* ── Fullscreen Viewer Mockup ───────────────────────── */
+.viewer-mockup-section{padding:100px 0;background:linear-gradient(180deg,transparent,rgba(233,69,96,.03) 50%,transparent)}
+.viewer-frame{background:#000;border-radius:12px;overflow:hidden;border:1px solid #2A2A3A;box-shadow:0 40px 80px rgba(0,0,0,.5);position:relative;aspect-ratio:16/9;max-height:520px;display:flex;flex-direction:column}
+.viewer-photo{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.viewer-photo-placeholder{width:55%;max-width:500px;aspect-ratio:3/2;border-radius:4px;background:linear-gradient(135deg,#1a3a2a,#0d2818,#1a3a2a);position:relative;overflow:hidden}
+.viewer-photo-placeholder::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(74,222,128,.08),transparent 40%,rgba(96,165,250,.06) 80%)}
+.vp-mountain{position:absolute;bottom:0;left:0;right:0;height:60%;background:linear-gradient(160deg,#1a4a2a 0%,#0d3018 40%,#1a3a2a 100%);clip-path:polygon(0 40%,15% 55%,30% 35%,50% 60%,65% 30%,80% 50%,100% 25%,100% 100%,0 100%)}
+.vp-sun{position:absolute;top:20%;right:25%;width:40px;height:40px;background:radial-gradient(circle,#FACC15,#FB923C);border-radius:50%;box-shadow:0 0 40px rgba(250,204,21,.3)}
+.viewer-exif{position:absolute;top:16px;right:16px;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);border-radius:8px;padding:12px 16px;font-size:10px;color:#A0A0B0;line-height:1.8;min-width:170px;border:1px solid rgba(255,255,255,.08)}
+.viewer-exif strong{color:#eaeaea;font-weight:600}
+.viewer-pos{position:absolute;bottom:80px;left:16px;background:rgba(0,0,0,.6);padding:4px 10px;border-radius:4px;font-size:11px;color:#A0A0B0;font-family:'JetBrains Mono',monospace}
+.viewer-zoom{position:absolute;bottom:80px;right:16px;background:rgba(0,0,0,.6);padding:4px 10px;border-radius:4px;font-size:11px;color:#A0A0B0;font-family:'JetBrains Mono',monospace}
+.viewer-filmstrip{height:64px;background:rgba(0,0,0,.85);border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;gap:6px;padding:0 16px;overflow:hidden}
+.fs-thumb{width:48px;height:48px;border-radius:4px;flex-shrink:0;border:2px solid transparent}
+.fs-thumb.active{border-color:#E94560}
+.viewer-rating{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);display:flex;gap:2px}
+.viewer-rating span{font-size:14px;color:#FACC15}
+@media(max-width:768px){.viewer-exif{display:none}.viewer-photo-placeholder{width:80%}}
+
+/* ── Format Showcase ────────────────────────────────── */
+.formats-section{padding:100px 0}
+.format-group{margin-bottom:32px}
+.format-group-label{font-size:13px;font-weight:700;color:#8888A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.format-pills{display:flex;flex-wrap:wrap;gap:8px}
+.format-pill{padding:6px 14px;border-radius:100px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:#A0A0B0;transition:all .2s}
+.format-pill:hover{border-color:#E94560;color:#eaeaea;background:rgba(233,69,96,.08)}
+.format-pill.highlight{border-color:rgba(233,69,96,.3);color:#FF6B81;background:rgba(233,69,96,.06)}
+
+/* ── Theme Comparison ───────────────────────────────── */
+.themes-section{padding:100px 0}
+.themes-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:48px}
+.theme-card{border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);box-shadow:0 20px 40px rgba(0,0,0,.3)}
+.theme-card-label{padding:12px 16px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;text-align:center}
+.tc-dark .theme-card-label{background:#18181E;color:#A0A0B0;border-bottom:1px solid #2A2A3A}
+.tc-light .theme-card-label{background:#EAEAEF;color:#505068;border-bottom:1px solid #D0D0DD}
+.theme-mini-gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:16px}
+.tc-dark .theme-mini-gallery{background:#111116}
+.tc-light .theme-mini-gallery{background:#F5F5F8}
+.tc-dark .tmg-thumb{background:#252530;border-radius:6px;aspect-ratio:1}
+.tc-light .tmg-thumb{background:#D0D0E0;border-radius:6px;aspect-ratio:1}
+.tmg-thumb.sel-dark{outline:2px solid #E94560;outline-offset:-2px}
+.tmg-thumb.sel-light{outline:2px solid #D63851;outline-offset:-2px}
+.tc-dark .tmg-name{font-size:8px;color:#8888A0;text-align:center;margin-top:3px}
+.tc-light .tmg-name{font-size:8px;color:#909098;text-align:center;margin-top:3px}
+.theme-mini-status{padding:6px 12px;font-size:9px}
+.tc-dark .theme-mini-status{background:#111116;color:#8888A0;border-top:1px solid #2A2A3A}
+.tc-light .theme-mini-status{background:#F5F5F8;color:#909098;border-top:1px solid #D0D0DD}
+@media(max-width:640px){.themes-grid{grid-template-columns:1fr}}
+
+/* ── Keyboard Shortcuts ─────────────────────────────── */
+.shortcuts-section{padding:100px 0}
+.shortcuts-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:48px}
+.shortcut-card{display:flex;align-items:center;gap:14px;padding:16px 20px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;transition:border-color .3s}
+.shortcut-card:hover{border-color:rgba(233,69,96,.25)}
+.kbd{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 10px;background:linear-gradient(180deg,#252530,#1E1E26);border:1px solid #3A3A4A;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:#eaeaea;box-shadow:0 2px 0 #1a1a22}
+.shortcut-desc{font-size:13px;color:#A0A0B0}
+@media(max-width:900px){.shortcuts-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.shortcuts-grid{grid-template-columns:1fr}}
+
+/* ── Download CTA ───────────────────────────────────── */
+.cta-section{padding:120px 0;text-align:center;position:relative;overflow:hidden}
+.cta-section::before{content:'';position:absolute;bottom:-30%;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse,rgba(233,69,96,.1) 0%,transparent 70%);pointer-events:none}
+.cta-section h2{font-size:clamp(32px,5vw,52px);font-weight:900;letter-spacing:-.02em;margin-bottom:16px}
+.cta-section p{font-size:17px;color:#A0A0B0;margin-bottom:40px;max-width:500px;margin-left:auto;margin-right:auto}
+.cta-buttons{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:32px}
+.cta-reqs{font-size:13px;color:#8888A0}
+.cta-reqs span{margin:0 8px}
+
+/* ── Footer ─────────────────────────────────────────── */
+.site-footer{padding:40px 0;border-top:1px solid rgba(255,255,255,.05)}
+.footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.footer-copy{font-size:13px;color:#8888A0}
+.footer-links{display:flex;gap:20px}
+.footer-links a{font-size:13px;color:#8888A0;transition:color .2s}
+.footer-links a:hover{color:#eaeaea}
+.footer-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:4px;border:1px solid rgba(255,255,255,.08);font-size:11px;color:#8888A0}
+
+/* ── Gradient photo fills for mockup thumbnails ────── */
+.gp-1{background:linear-gradient(135deg,#E94560,#FF6B81)}
+.gp-2{background:linear-gradient(135deg,#60A5FA,#3B82F6)}
+.gp-3{background:linear-gradient(135deg,#4ADE80,#16A34A)}
+.gp-4{background:linear-gradient(135deg,#FB923C,#F97316)}
+.gp-5{background:linear-gradient(135deg,#A855F7,#7C3AED)}
+.gp-6{background:linear-gradient(135deg,#FACC15,#EAB308)}
+.gp-7{background:linear-gradient(135deg,#2DD4BF,#14B8A6)}
+.gp-8{background:linear-gradient(135deg,#F472B6,#EC4899)}
+.gp-9{background:linear-gradient(145deg,#1a2a1a,#0d180d);position:relative}
+.gp-10{background:linear-gradient(135deg,#818CF8,#6366F1)}
+.gp-11{background:linear-gradient(135deg,#38BDF8,#0EA5E9)}
+.gp-12{background:linear-gradient(135deg,#FB7185,#E11D48)}
+.gp-folder{background:#252530;display:flex;align-items:center;justify-content:center;color:#8888A0;font-size:20px}
+
+/* Filmstrip thumb colors */
+.fst-1{background:linear-gradient(135deg,#E94560,#FF6B81)}
+.fst-2{background:linear-gradient(135deg,#60A5FA,#3B82F6)}
+.fst-3{background:linear-gradient(135deg,#4ADE80,#16A34A)}
+.fst-4{background:linear-gradient(135deg,#1a3a2a,#0d2818)}
+.fst-5{background:linear-gradient(135deg,#FB923C,#F97316)}
+.fst-6{background:linear-gradient(135deg,#A855F7,#7C3AED)}
+.fst-7{background:linear-gradient(135deg,#FACC15,#EAB308)}
+.fst-8{background:linear-gradient(135deg,#2DD4BF,#14B8A6)}
+.fst-9{background:linear-gradient(135deg,#F472B6,#EC4899)}
+
+/* Theme-mini colors */
+.tmd-1{background:linear-gradient(135deg,#E94560,#3a1520)!important}
+.tmd-2{background:linear-gradient(135deg,#2a3a5a,#1a2a3a)!important}
+.tmd-3{background:linear-gradient(135deg,#1a3a2a,#0d2818)!important}
+.tmd-4{background:linear-gradient(135deg,#3a2a1a,#2a1a0a)!important}
+.tml-1{background:linear-gradient(135deg,#f0a0b0,#e080a0)!important}
+.tml-2{background:linear-gradient(135deg,#a0c0e0,#80a0c8)!important}
+.tml-3{background:linear-gradient(135deg,#a0d8b0,#80c098)!important}
+.tml-4{background:linear-gradient(135deg,#e0c8a0,#c8b088)!important}
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav class="site-nav" id="siteNav">
+  <div class="container">
+    <a href="#" class="nav-brand">
+      <div class="nav-logo">IB</div>
+      Image Browse
+    </a>
+    <button class="nav-mobile-btn" id="navToggle" aria-label="Toggle navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#features">Features</a>
+      <a href="#formats">Formats</a>
+      <a href="#themes">Themes</a>
+      <a href="#shortcuts">Shortcuts</a>
+      <a href="https://github.com/fastbone/Image-Browse-Opus" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/fastbone/Image-Browse-Opus/releases" class="nav-cta" target="_blank" rel="noopener">Download</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge"><span class="dot"></span> Free &amp; open source</div>
+    <h1>Browse your media.<br><span class="accent-word">Blazing fast.</span></h1>
+    <p class="hero-sub">A lightweight Windows media browser that flies through thousands of images and videos. Supports 80+ image formats with instant cached thumbnails and zero bloat.</p>
+    <div class="hero-buttons">
+      <a href="https://github.com/fastbone/Image-Browse-Opus/releases" class="btn-primary" target="_blank" rel="noopener">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download for Windows
+      </a>
+      <a href="https://github.com/fastbone/Image-Browse-Opus" class="btn-secondary" target="_blank" rel="noopener">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        View on GitHub
+      </a>
+    </div>
+
+    <!-- App Mockup -->
+    <div class="mockup-wrapper reveal">
+      <div class="mockup-frame">
+        <div class="mockup-titlebar">
+          <span class="mockup-dot r"></span><span class="mockup-dot y"></span><span class="mockup-dot g"></span>
+          <span class="mockup-title">Image Browse</span>
+        </div>
+        <div class="mockup-toolbar">
+          <div class="tb-btn">&#9776;</div>
+          <div class="tb-sep"></div>
+          <div class="tb-btn">&#8592;</div>
+          <div class="tb-btn">&#8594;</div>
+          <div class="tb-btn">&#8593;</div>
+          <div class="tb-sep"></div>
+          <div class="tb-breadcrumb">
+            <span class="tb-crumb">&#128193;</span>
+            <span class="tb-crumb">Pictures</span>
+            <span class="tb-crumb-sep">&#8250;</span>
+            <span class="tb-crumb">Vacations</span>
+            <span class="tb-crumb-sep">&#8250;</span>
+            <span class="tb-crumb active">Norway 2025</span>
+          </div>
+          <div class="tb-sep"></div>
+          <div class="tb-sort-group">
+            <div class="tb-sort active">Name</div>
+            <div class="tb-sort">Modified</div>
+            <div class="tb-sort">Size</div>
+            <div class="tb-sort">Rating</div>
+          </div>
+          <div class="tb-sep"></div>
+          <div class="tb-slider">
+            <span class="tb-slider-icon">&#9642;</span>
+            <div class="tb-slider-track"><div class="tb-slider-fill"></div><div class="tb-slider-thumb"></div></div>
+            <span class="tb-slider-icon">&#9632;</span>
+          </div>
+          <div class="tb-sep"></div>
+          <div class="tb-btn">&#9790;</div>
+          <div class="tb-btn">&#9881;</div>
+        </div>
+        <div class="mockup-body">
+          <div class="mockup-sidebar">
+            <div class="sb-item"><span class="sb-icon">&#128187;</span> This PC</div>
+            <div class="sb-item sb-indent"><span class="sb-icon">&#128190;</span> C:</div>
+            <div class="sb-item sb-indent"><span class="sb-icon">&#128190;</span> D:</div>
+            <div class="sb-item"><span class="sb-icon">&#128247;</span> Pictures</div>
+            <div class="sb-item active sb-indent"><span class="sb-icon">&#128193;</span> Norway 2025</div>
+            <div class="sb-item sb-indent"><span class="sb-icon">&#128193;</span> Portraits</div>
+            <div class="sb-item sb-indent"><span class="sb-icon">&#128193;</span> Street</div>
+            <div class="sb-item"><span class="sb-icon">&#128421;</span> Desktop</div>
+            <div class="sb-item"><span class="sb-icon">&#128196;</span> Documents</div>
+            <div class="sb-item"><span class="sb-icon">&#11015;</span> Downloads</div>
+          </div>
+          <div class="mockup-gallery">
+            <div><div class="gal-thumb gp-folder">&#128193;</div><div class="gal-fname">Landscapes</div></div>
+            <div><div class="gal-thumb gp-1"><div class="gal-thumb-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div></div><div class="gal-fname">DSC_0184.jpg</div></div>
+            <div><div class="gal-thumb gp-2 gal-selected"><div class="gal-thumb-tag">&#10003;</div></div><div class="gal-fname">aurora_01.heic</div></div>
+            <div><div class="gal-thumb gp-3"><div class="gal-thumb-stars">&#9733;&#9733;&#9733;&#9733;</div></div><div class="gal-fname">fjord_pano.jxl</div></div>
+            <div><div class="gal-thumb gp-9"><div class="gal-thumb-video"><span>&#9654;</span></div><div class="gal-thumb-dur">2:34</div></div><div class="gal-fname">sunset_drone.mp4</div></div>
+            <div><div class="gal-thumb gp-4"></div><div class="gal-fname">cabin.arw</div></div>
+            <div><div class="gal-thumb gp-5"><div class="gal-thumb-stars">&#9733;&#9733;&#9733;</div></div><div class="gal-fname">northern_lights.cr3</div></div>
+            <div><div class="gal-thumb gp-6"></div><div class="gal-fname">mountain.avif</div></div>
+            <div><div class="gal-thumb gp-7"><div class="gal-thumb-tag">&#10003;</div><div class="gal-thumb-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div></div><div class="gal-fname">waterfall.dng</div></div>
+            <div><div class="gal-thumb gp-8"></div><div class="gal-fname">village.psd</div></div>
+            <div><div class="gal-thumb gp-10"><div class="gal-thumb-stars">&#9733;&#9733;</div></div><div class="gal-fname">snow_field.nef</div></div>
+            <div><div class="gal-thumb gp-11"></div><div class="gal-fname">harbor.webp</div></div>
+            <div><div class="gal-thumb gp-12"><div class="gal-thumb-video"><span>&#9654;</span></div><div class="gal-thumb-dur">0:48</div></div><div class="gal-fname">timelapse.mkv</div></div>
+            <div><div class="gal-thumb gp-folder">&#128193;</div><div class="gal-fname">Edits</div></div>
+            <div><div class="gal-thumb gp-3"><div class="gal-thumb-stars">&#9733;&#9733;&#9733;&#9733;</div></div><div class="gal-fname">trail_hike.svg</div></div>
+            <div><div class="gal-thumb gp-1"></div><div class="gal-fname">camp_fire.tiff</div></div>
+          </div>
+        </div>
+        <div class="mockup-statusbar">
+          <span>14 images, 2 videos, 2 folders</span>
+          <span>Thumbnail: 160px</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ STATS ═══ -->
+<section class="stats reveal">
+  <div class="container">
+    <div class="stats-grid">
+      <div>
+        <div class="stat-num">80<span class="accent">+</span></div>
+        <div class="stat-label">Image formats</div>
+      </div>
+      <div>
+        <div class="stat-num">16</div>
+        <div class="stat-label">Video formats</div>
+      </div>
+      <div>
+        <div class="stat-num">0<span class="accent">ms</span></div>
+        <div class="stat-label">Cached re-visit</div>
+      </div>
+      <div>
+        <div class="stat-num">&infin;</div>
+        <div class="stat-label">Files per folder</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FEATURES ═══ -->
+<section class="section" id="features">
+  <div class="container">
+    <div class="section-center reveal">
+      <div class="section-label">&#9889; Features</div>
+      <h2 class="section-title">Everything you need.<br>Nothing you don't.</h2>
+      <p class="section-desc">Built from the ground up for speed and simplicity. No cloud accounts, no subscriptions, no telemetry. Just your files, instantly.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon fi-gallery">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        </div>
+        <h3>Virtualized Gallery</h3>
+        <p>Scroll through thousands of thumbnails without a hiccup. The virtualized wrap panel only renders what you see, keeping memory low and performance high.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon fi-viewer">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </div>
+        <h3>Fullscreen Viewer</h3>
+        <p>Immersive distraction-free viewing with smooth zoom, pan, EXIF info overlay, filmstrip navigation, and crossfade transitions between images.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon fi-video">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </div>
+        <h3>Video Playback</h3>
+        <p>Integrated player powered by LibVLC. Seek, adjust speed from 0.25x to 4x, zoom with mini-map, and browse 16 video formats seamlessly alongside images.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon fi-organize">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+        <h3>Organization</h3>
+        <p>Rate images 1&ndash;5 stars, tag favourites, and sort by name, date, size, dimensions, type, or rating. Per-folder sort preferences persist automatically.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon fi-formats">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <h3>Massive Format Support</h3>
+        <p>From everyday JPEGs to camera RAW, HEIC, AVIF, JPEG XL, PSD, SVG, HDR, EXR, and more. Powered by Magick.NET with WPF fast-path for common formats.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon fi-perf">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <h3>Instant Performance</h3>
+        <p>SQLite-backed thumbnail cache with content-hash deduplication. Prescan entire folder trees in the background so every revisit is instant.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FULLSCREEN VIEWER MOCKUP ═══ -->
+<section class="viewer-mockup-section" id="viewer">
+  <div class="container">
+    <div class="section-center reveal">
+      <div class="section-label">&#128248; Fullscreen Viewer</div>
+      <h2 class="section-title">Immersive viewing experience</h2>
+      <p class="section-desc">Zoom, pan, browse EXIF data, and navigate your collection without leaving fullscreen. The filmstrip keeps context always within reach.</p>
+    </div>
+    <div class="reveal" style="margin-top:48px">
+      <div class="viewer-frame">
+        <div class="viewer-photo">
+          <div class="viewer-photo-placeholder">
+            <div class="vp-sun"></div>
+            <div class="vp-mountain"></div>
+          </div>
+          <div class="viewer-exif">
+            <div><strong>Canon EOS R5</strong></div>
+            <div>RF 24-70mm f/2.8</div>
+            <div>ISO 200 &middot; f/8 &middot; 1/250s</div>
+            <div>24mm &middot; 8192&times;5464</div>
+            <div style="margin-top:4px;color:#8888A0;font-size:9px">2025-07-14 19:42</div>
+          </div>
+          <div class="viewer-pos">3 / 14</div>
+          <div class="viewer-zoom">Fit</div>
+          <div class="viewer-rating">
+            <span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span style="opacity:.3">&#9733;</span>
+          </div>
+        </div>
+        <div class="viewer-filmstrip">
+          <div class="fs-thumb fst-1"></div>
+          <div class="fs-thumb fst-2"></div>
+          <div class="fs-thumb fst-3"></div>
+          <div class="fs-thumb fst-4 active"></div>
+          <div class="fs-thumb fst-5"></div>
+          <div class="fs-thumb fst-6"></div>
+          <div class="fs-thumb fst-7"></div>
+          <div class="fs-thumb fst-8"></div>
+          <div class="fs-thumb fst-9"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FORMATS ═══ -->
+<section class="formats-section section" id="formats">
+  <div class="container">
+    <div class="section-center reveal">
+      <div class="section-label">&#128196; Format Support</div>
+      <h2 class="section-title">Open anything. Seriously.</h2>
+      <p class="section-desc">Image Browse handles your entire media library in one place, from smartphone photos to professional camera RAW files and cinema-grade HDR.</p>
+    </div>
+    <div style="margin-top:48px">
+      <div class="format-group reveal">
+        <div class="format-group-label">Common Raster</div>
+        <div class="format-pills">
+          <span class="format-pill">.jpg</span><span class="format-pill">.png</span><span class="format-pill">.gif</span><span class="format-pill">.bmp</span><span class="format-pill">.tiff</span><span class="format-pill">.ico</span>
+        </div>
+      </div>
+      <div class="format-group reveal">
+        <div class="format-group-label">Modern &amp; Web</div>
+        <div class="format-pills">
+          <span class="format-pill highlight">.webp</span><span class="format-pill highlight">.heic</span><span class="format-pill highlight">.avif</span><span class="format-pill highlight">.jxl</span><span class="format-pill">.apng</span><span class="format-pill">.svg</span>
+        </div>
+      </div>
+      <div class="format-group reveal">
+        <div class="format-group-label">Camera RAW</div>
+        <div class="format-pills">
+          <span class="format-pill highlight">.cr2</span><span class="format-pill highlight">.cr3</span><span class="format-pill highlight">.nef</span><span class="format-pill highlight">.arw</span><span class="format-pill">.orf</span><span class="format-pill">.raf</span><span class="format-pill">.rw2</span><span class="format-pill highlight">.dng</span><span class="format-pill">.pef</span><span class="format-pill">.srw</span><span class="format-pill">.3fr</span><span class="format-pill">.iiq</span>
+          <span class="format-pill" style="border-style:dashed">+15 more</span>
+        </div>
+      </div>
+      <div class="format-group reveal">
+        <div class="format-group-label">Design &amp; Layered</div>
+        <div class="format-pills">
+          <span class="format-pill highlight">.psd</span><span class="format-pill">.psb</span><span class="format-pill">.xcf</span><span class="format-pill">.ai</span><span class="format-pill">.eps</span>
+        </div>
+      </div>
+      <div class="format-group reveal">
+        <div class="format-group-label">HDR &amp; Scientific</div>
+        <div class="format-pills">
+          <span class="format-pill highlight">.hdr</span><span class="format-pill highlight">.exr</span><span class="format-pill">.pfm</span><span class="format-pill">.fits</span><span class="format-pill">.dpx</span><span class="format-pill">.cin</span>
+        </div>
+      </div>
+      <div class="format-group reveal">
+        <div class="format-group-label">Video</div>
+        <div class="format-pills">
+          <span class="format-pill highlight">.mp4</span><span class="format-pill highlight">.mkv</span><span class="format-pill">.avi</span><span class="format-pill highlight">.mov</span><span class="format-pill">.webm</span><span class="format-pill">.wmv</span><span class="format-pill">.flv</span><span class="format-pill">.m4v</span><span class="format-pill">.mpg</span><span class="format-pill">.ts</span><span class="format-pill">.3gp</span><span class="format-pill">.ogv</span><span class="format-pill">.vob</span><span class="format-pill">.mts</span><span class="format-pill">.m2ts</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ THEMES ═══ -->
+<section class="themes-section" id="themes">
+  <div class="container">
+    <div class="section-center reveal">
+      <div class="section-label">&#127912; Themes</div>
+      <h2 class="section-title">Dark or light. Your call.</h2>
+      <p class="section-desc">Switch between a sleek dark theme for focused editing and a clean light theme for daytime browsing. One shortcut toggles instantly.</p>
+    </div>
+    <div class="themes-grid reveal">
+      <div class="theme-card tc-dark">
+        <div class="theme-card-label">Dark Theme</div>
+        <div class="theme-mini-gallery">
+          <div><div class="tmg-thumb tmd-1"></div><div class="tmg-name">sunset.jpg</div></div>
+          <div><div class="tmg-thumb tmd-2 sel-dark"></div><div class="tmg-name">ocean.heic</div></div>
+          <div><div class="tmg-thumb tmd-3"></div><div class="tmg-name">forest.avif</div></div>
+          <div><div class="tmg-thumb tmd-4"></div><div class="tmg-name">cabin.arw</div></div>
+          <div><div class="tmg-thumb tmd-1"></div><div class="tmg-name">peak.cr3</div></div>
+          <div><div class="tmg-thumb tmd-3"></div><div class="tmg-name">trail.dng</div></div>
+          <div><div class="tmg-thumb tmd-2"></div><div class="tmg-name">lake.webp</div></div>
+          <div><div class="tmg-thumb tmd-4"></div><div class="tmg-name">camp.nef</div></div>
+        </div>
+        <div class="theme-mini-status">8 images &middot; Thumbnail: 120px</div>
+      </div>
+      <div class="theme-card tc-light">
+        <div class="theme-card-label">Light Theme</div>
+        <div class="theme-mini-gallery">
+          <div><div class="tmg-thumb tml-1"></div><div class="tmg-name">sunset.jpg</div></div>
+          <div><div class="tmg-thumb tml-2 sel-light"></div><div class="tmg-name">ocean.heic</div></div>
+          <div><div class="tmg-thumb tml-3"></div><div class="tmg-name">forest.avif</div></div>
+          <div><div class="tmg-thumb tml-4"></div><div class="tmg-name">cabin.arw</div></div>
+          <div><div class="tmg-thumb tml-1"></div><div class="tmg-name">peak.cr3</div></div>
+          <div><div class="tmg-thumb tml-3"></div><div class="tmg-name">trail.dng</div></div>
+          <div><div class="tmg-thumb tml-2"></div><div class="tmg-name">lake.webp</div></div>
+          <div><div class="tmg-thumb tml-4"></div><div class="tmg-name">camp.nef</div></div>
+        </div>
+        <div class="theme-mini-status">8 images &middot; Thumbnail: 120px</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SHORTCUTS ═══ -->
+<section class="shortcuts-section section" id="shortcuts">
+  <div class="container">
+    <div class="section-center reveal">
+      <div class="section-label">&#9000; Keyboard Shortcuts</div>
+      <h2 class="section-title">Designed for your keyboard</h2>
+      <p class="section-desc">Navigate, rate, tag, and browse without reaching for the mouse. Every action is a keystroke away.</p>
+    </div>
+    <div class="shortcuts-grid reveal">
+      <div class="shortcut-card">
+        <kbd class="kbd">F</kbd>
+        <span class="shortcut-desc">Enter fullscreen</span>
+      </div>
+      <div class="shortcut-card">
+        <kbd class="kbd">I</kbd>
+        <span class="shortcut-desc">EXIF info overlay</span>
+      </div>
+      <div class="shortcut-card">
+        <kbd class="kbd">1</kbd><span style="color:#3A3A4A;margin:0 -4px">&ndash;</span><kbd class="kbd">5</kbd>
+        <span class="shortcut-desc">Star rating</span>
+      </div>
+      <div class="shortcut-card">
+        <kbd class="kbd">Q</kbd>
+        <span class="shortcut-desc">Toggle tag</span>
+      </div>
+      <div class="shortcut-card">
+        <kbd class="kbd">R</kbd>
+        <span class="shortcut-desc">Rotate 90&deg;</span>
+      </div>
+      <div class="shortcut-card">
+        <kbd class="kbd">T</kbd>
+        <span class="shortcut-desc">Pin filmstrip</span>
+      </div>
+      <div class="shortcut-card">
+        <kbd class="kbd">Ctrl</kbd><span style="color:#3A3A4A">+</span><kbd class="kbd">L</kbd>
+        <span class="shortcut-desc">Edit path</span>
+      </div>
+      <div class="shortcut-card">
+        <kbd class="kbd">[</kbd><span style="color:#3A3A4A">&nbsp;</span><kbd class="kbd">]</kbd>
+        <span class="shortcut-desc">Playback speed</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ DOWNLOAD CTA ═══ -->
+<section class="cta-section" id="download">
+  <div class="container">
+    <div class="reveal">
+      <h2>Ready to browse <span class="accent">faster</span>?</h2>
+      <p>Free and open source. Download now for Windows.</p>
+      <div class="cta-buttons">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases" class="btn-primary" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download for Windows
+        </a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus" class="btn-secondary" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          View Source
+        </a>
+      </div>
+      <div class="cta-reqs">
+        Windows 10+ (64-bit) <span>&middot;</span> .NET 10 Desktop Runtime <span>&middot;</span> GPL-3.0 License
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-copy">&copy; 2026 fastbone. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/blob/main/LICENSE" target="_blank" rel="noopener">
+          <span class="footer-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            GPL-3.0
+          </span>
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+document.documentElement.classList.add('js');
+(function(){
+  // Nav scroll effect
+  var nav=document.getElementById('siteNav');
+  window.addEventListener('scroll',function(){nav.classList.toggle('scrolled',window.scrollY>40)},{passive:true});
+
+  // Mobile nav toggle
+  var btn=document.getElementById('navToggle'),links=document.getElementById('navLinks');
+  btn.addEventListener('click',function(){links.classList.toggle('open')});
+  links.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){links.classList.remove('open')})});
+
+  // Reveal on scroll
+  var reveals=document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var obs=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}});
+    },{threshold:0.12,rootMargin:'0px 0px -40px 0px'});
+    reveals.forEach(function(el){obs.observe(el)});
+  }else{
+    reveals.forEach(function(el){el.classList.add('visible')});
+  }
+})();
+</script>
+</body>
+</html>

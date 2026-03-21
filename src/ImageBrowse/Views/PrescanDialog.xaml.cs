@@ -1,3 +1,4 @@
+using ImageBrowse.Helpers;
 using ImageBrowse.Services;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,10 +13,13 @@ public partial class PrescanDialog : Window
     private CancellationTokenSource? _cts;
     private bool _isRunning;
 
-    public PrescanDialog(DatabaseService db, string currentPath)
+    private readonly bool _enableAnimations;
+
+    public PrescanDialog(DatabaseService db, string currentPath, bool enableAnimations = true)
     {
         InitializeComponent();
         _db = db;
+        _enableAnimations = enableAnimations;
         _prescanService = new PrescanService();
         _prescanService.ProgressChanged += OnProgressChanged;
 
@@ -26,6 +30,8 @@ public partial class PrescanDialog : Window
 
         Background = (System.Windows.Media.Brush)FindResource("BgPrimaryBrush");
         Foreground = (System.Windows.Media.Brush)FindResource("FgPrimaryBrush");
+
+        Loaded += (_, _) => DialogAnimationHelper.AnimateOpen(this, _enableAnimations);
     }
 
     private void BrowseFolder_Click(object sender, RoutedEventArgs e)

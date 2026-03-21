@@ -24,6 +24,11 @@
                       HorizontalScrollBarVisibility="Hidden"
                       VerticalScrollBarVisibility="Hidden"
                       Background="Black"
+                      IsManipulationEnabled="True"
+                      ManipulationStarting="ImageScroller_ManipulationStarting"
+                      ManipulationDelta="ImageScroller_ManipulationDelta"
+                      ManipulationCompleted="ImageScroller_ManipulationCompleted"
+                      ScrollChanged="ImageScroller_ScrollChanged"
                       MouseLeftButtonDown="ImageScroller_MouseLeftButtonDown"
                       MouseLeftButtonUp="ImageScroller_MouseLeftButtonUp"
                       MouseMove="ImageScroller_MouseMove">
@@ -150,17 +155,93 @@
                 </Grid>
 
                 <!-- Rating -->
-                <TextBlock x:Name="InfoRating" FontSize="14" Foreground="#FFD700" Margin="0,10,0,0" />
+                <helpers:RatingStarsControl x:Name="InfoRatingStars" StarSize="14" Margin="0,10,0,0" />
             </StackPanel>
         </Border>
 
-        <!-- Position indicator (bottom center, auto-fades) -->
+        <!-- Filmstrip thumbnail strip (bottom, auto-show on mouse proximity) -->
+        <Border x:Name="FilmstripPanel" Opacity="0" IsHitTestVisible="True"
+                Background="#CC000000" VerticalAlignment="Bottom"
+                Height="86" Cursor="Arrow"
+                MouseEnter="Filmstrip_MouseEnter" MouseLeave="Filmstrip_MouseLeave">
+            <ListBox x:Name="FilmstripList"
+                     Background="Transparent" BorderThickness="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                     ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                     VirtualizingPanel.IsVirtualizing="True"
+                     VirtualizingPanel.VirtualizationMode="Recycling"
+                     SelectionMode="Single"
+                     SelectionChanged="FilmstripList_SelectionChanged">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <VirtualizingStackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Margin" Value="3,8" />
+                        <Setter Property="Cursor" Value="Hand" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="thumbBorder"
+                                            BorderBrush="Transparent" BorderThickness="2"
+                                            CornerRadius="4" Background="Transparent" Opacity="0.5">
+                                        <ContentPresenter />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="thumbBorder" Property="BorderBrush" Value="White" />
+                                            <Setter TargetName="thumbBorder" Property="Opacity" Value="1" />
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="thumbBorder" Property="Opacity" Value="0.85" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border CornerRadius="3" ClipToBounds="True">
+                            <Image Source="{Binding Thumbnail}" Width="60" Height="60"
+                                   Stretch="UniformToFill"
+                                   RenderOptions.BitmapScalingMode="LowQuality" />
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <!-- Position indicator (bottom center, auto-fades, shifts up when filmstrip visible) -->
         <Border x:Name="PositionIndicator" Opacity="0" IsHitTestVisible="False"
                 Background="#88000000" CornerRadius="14"
                 Padding="18,8" Margin="0,0,0,30"
                 HorizontalAlignment="Center" VerticalAlignment="Bottom">
             <TextBlock x:Name="PositionText" FontSize="14" Foreground="White"
                        FontWeight="Medium" />
+        </Border>
+
+        <!-- Mini-map when zoomed (bottom-right) -->
+        <Border x:Name="MiniMapPanel" Visibility="Collapsed" IsHitTestVisible="True"
+                Background="#AA000000" CornerRadius="8"
+                Width="160" Height="120"
+                Margin="0,0,16,16" Padding="4"
+                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                Cursor="Hand"
+                MouseLeftButtonDown="MiniMap_MouseLeftButtonDown"
+                MouseMove="MiniMap_MouseMove"
+                MouseLeftButtonUp="MiniMap_MouseLeftButtonUp">
+            <Canvas x:Name="MiniMapCanvas" ClipToBounds="True">
+                <Image x:Name="MiniMapImage" Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="LowQuality" />
+                <Rectangle x:Name="MiniMapViewport"
+                           Stroke="#CCFFFFFF" StrokeThickness="1.5"
+                           Fill="#22FFFFFF" RadiusX="1" RadiusY="1" />
+            </Canvas>
         </Border>
 
         <!-- Zoom indicator (top right, auto-fades) -->

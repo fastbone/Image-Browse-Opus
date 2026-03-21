@@ -82,7 +82,7 @@
                 <Rectangle Grid.Column="3" Width="1" Fill="{DynamicResource BorderBrush}"
                            Margin="6,4" VerticalAlignment="Stretch" />
 
-                <!-- Address bar with folder icon -->
+                <!-- Address bar: breadcrumb mode + edit mode -->
                 <Grid Grid.Column="4" Margin="4,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -91,11 +91,32 @@
                     <TextBlock Grid.Column="0" Text="&#xED25;" FontFamily="{DynamicResource IconFont}"
                                FontSize="13" Foreground="{DynamicResource FgMutedBrush}"
                                VerticalAlignment="Center" Margin="0,0,6,0" />
+
+                    <!-- Breadcrumb mode -->
+                    <Border Grid.Column="1" x:Name="BreadcrumbBar"
+                            Background="{DynamicResource BgSurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                            CornerRadius="6" Padding="4,3" Cursor="Hand"
+                            MouseLeftButtonDown="BreadcrumbBar_MouseLeftButtonDown">
+                        <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+                            <ItemsControl x:Name="BreadcrumbItems">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+
+                    <!-- Edit mode (hidden by default) -->
                     <TextBox Grid.Column="1" x:Name="AddressBar"
                              AutomationProperties.Name="Folder Path"
                              Style="{DynamicResource AddressBar}"
+                             Visibility="Collapsed"
                              Text="{Binding CurrentPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              KeyDown="AddressBar_KeyDown"
+                             LostFocus="AddressBar_LostFocus"
                              VerticalContentAlignment="Center" />
                 </Grid>
 
@@ -103,27 +124,39 @@
                 <Rectangle Grid.Column="5" Width="1" Fill="{DynamicResource BorderBrush}"
                            Margin="6,4" VerticalAlignment="Stretch" />
 
-                <!-- Sort controls -->
-                <StackPanel Grid.Column="6" Orientation="Horizontal" Margin="4,0">
-                    <TextBlock Text="Sort:" VerticalAlignment="Center" Margin="0,0,4,0"
-                               Foreground="{DynamicResource FgMutedBrush}" FontSize="12" />
-                    <ComboBox x:Name="SortFieldCombo" Width="120" VerticalAlignment="Center"
-                              SelectionChanged="SortFieldCombo_SelectionChanged">
-                        <ComboBoxItem Content="Name" Tag="{x:Static models:SortField.FileName}" IsSelected="True" />
-                        <ComboBoxItem Content="Date Modified" Tag="{x:Static models:SortField.DateModified}" />
-                        <ComboBoxItem Content="Date Created" Tag="{x:Static models:SortField.DateCreated}" />
-                        <ComboBoxItem Content="Date Taken" Tag="{x:Static models:SortField.DateTaken}" />
-                        <ComboBoxItem Content="File Size" Tag="{x:Static models:SortField.FileSize}" />
-                        <ComboBoxItem Content="Dimensions" Tag="{x:Static models:SortField.Dimensions}" />
-                        <ComboBoxItem Content="File Type" Tag="{x:Static models:SortField.FileType}" />
-                        <ComboBoxItem Content="Rating" Tag="{x:Static models:SortField.Rating}" />
-                    </ComboBox>
-                    <Button x:Name="SortDirectionButton" ToolTip="Toggle Sort Direction"
-                            AutomationProperties.Name="Toggle Sort Direction"
-                            Style="{DynamicResource ToolbarButton}" Margin="2,0"
-                            Command="{Binding ToggleSortDirectionCommand}">
-                        <TextBlock x:Name="SortDirectionIcon" Text="&#xE74A;" FontFamily="{DynamicResource IconFont}" FontSize="12" />
-                    </Button>
+                <!-- Sort controls (segmented pill) -->
+                <StackPanel Grid.Column="6" Orientation="Horizontal" Margin="4,0"
+                            VerticalAlignment="Center">
+                    <Border Background="{DynamicResource BgSurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                            CornerRadius="6" Padding="1">
+                        <StackPanel x:Name="SortSegments" Orientation="Horizontal">
+                            <RadioButton x:Name="SortName" Content="Name" Tag="{x:Static models:SortField.FileName}"
+                                         GroupName="SortField" Style="{DynamicResource SortSegmentButton}"
+                                         IsChecked="True" Click="SortSegment_Click" />
+                            <RadioButton Content="Modified" Tag="{x:Static models:SortField.DateModified}"
+                                         GroupName="SortField" Style="{DynamicResource SortSegmentButton}"
+                                         Click="SortSegment_Click" />
+                            <RadioButton Content="Created" Tag="{x:Static models:SortField.DateCreated}"
+                                         GroupName="SortField" Style="{DynamicResource SortSegmentButton}"
+                                         Click="SortSegment_Click" />
+                            <RadioButton Content="Taken" Tag="{x:Static models:SortField.DateTaken}"
+                                         GroupName="SortField" Style="{DynamicResource SortSegmentButton}"
+                                         Click="SortSegment_Click" />
+                            <RadioButton Content="Size" Tag="{x:Static models:SortField.FileSize}"
+                                         GroupName="SortField" Style="{DynamicResource SortSegmentButton}"
+                                         Click="SortSegment_Click" />
+                            <RadioButton Content="Dims" Tag="{x:Static models:SortField.Dimensions}"
+                                         GroupName="SortField" Style="{DynamicResource SortSegmentButton}"
+                                         Click="SortSegment_Click" />
+                            <RadioButton Content="Type" Tag="{x:Static models:SortField.FileType}"
+                                         GroupName="SortField" Style="{DynamicResource SortSegmentButton}"
+                                         Click="SortSegment_Click" />
+                            <RadioButton Content="Rating" Tag="{x:Static models:SortField.Rating}"
+                                         GroupName="SortField" Style="{DynamicResource SortSegmentButton}"
+                                         Click="SortSegment_Click" />
+                        </StackPanel>
+                    </Border>
                     <Button ToolTip="Reset to default sort"
                             AutomationProperties.Name="Reset Sort"
                             Style="{DynamicResource ToolbarButton}" Margin="2,0"

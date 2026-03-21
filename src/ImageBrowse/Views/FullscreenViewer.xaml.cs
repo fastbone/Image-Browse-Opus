@@ -3,8 +3,12 @@ using ImageBrowse.Services;
 using ImageBrowse.ViewModels;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 
 namespace ImageBrowse.Views;
@@ -27,6 +31,15 @@ public partial class FullscreenViewer : Window
     private Point _dragStart;
     private double _dragHOffset;
     private double _dragVOffset;
+
+    private bool _filmstripPinned;
+    private bool _filmstripVisible;
+    private readonly DispatcherTimer _filmstripFadeTimer;
+    private bool _suppressFilmstripNav;
+    private CollectionViewSource? _filmstripViewSource;
+
+    private bool _miniMapDragging;
+    private double _manipulationCumulativeX;
 
     private const double ZoomStep = 0.15;
     private const double MinZoom = 0.1;
@@ -59,6 +72,14 @@ public partial class FullscreenViewer : Window
             FadeOut(ZoomIndicator);
             _zoomFadeTimer.Stop();
         };
+
+        _filmstripFadeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+        _filmstripFadeTimer.Tick += (_, _) =>
+        {
+            if (!_filmstripPinned)
+                HideFilmstrip();
+            _filmstripFadeTimer.Stop();
+        };
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -72,6 +93,13 @@ public partial class FullscreenViewer : Window
             var i = _vm.SortedImages[idx];
             return (i.FilePath, i.IsFolder);
         });
+
+        _filmstripViewSource = new CollectionViewSource { Source = _vm.SortedImages };
+        _filmstripViewSource.Filter += (_, e) =>
+        {
+            e.Accepted = e.Item is ImageItem item && !item.IsFolder;
+        };
+        FilmstripList.ItemsSource = _filmstripViewSource.View;
 
         LoadCurrentImage(crossfade: false);
         _cursorTimer.Start();
@@ -134,6 +162,7 @@ public partial class FullscreenViewer : Window
         ResetZoom();
         UpdateInfo(item);
         ShowPosition();
+        SyncFilmstripSelection();
     }
 
     private void ResetZoom()
@@ -144,6 +173,7 @@ public partial class FullscreenViewer : Window
         ImageScale.ScaleY = 1;
         DisplayImage.MaxWidth = ActualWidth > 0 ? ActualWidth : SystemParameters.PrimaryScreenWidth;
         DisplayImage.MaxHeight = ActualHeight > 0 ? ActualHeight : SystemParameters.PrimaryScreenHeight;
+        UpdateMiniMapVisibility();
     }
 
     private void ApplyZoom(double newZoom)
@@ -155,6 +185,7 @@ public partial class FullscreenViewer : Window
         ImageScale.ScaleX = _zoomLevel;
         ImageScale.ScaleY = _zoomLevel;
         ShowZoom();
+        UpdateMiniMapVisibility();
     }
 
     private void FitToScreen()
@@ -290,8 +321,7 @@ public partial class FullscreenViewer : Window
         CameraSeparator.Visibility = hasCamera || hasLens || expParts.Count > 0
             ? Visibility.Visible : Visibility.Collapsed;
 
-        InfoRating.Text = item.Rating > 0
-            ? new string('\u2605', item.Rating) + new string('\u2606', 5 - item.Rating) : "";
+        InfoRatingStars.Rating = item.Rating;
     }
 
     private void NavigateNext()
@@ -449,6 +479,11 @@ public partial class FullscreenViewer : Window
                 e.Handled = true;
                 break;
 
+            case Key.T:
+                ToggleFilmstripPin();
+                e.Handled = true;
+                break;
+
             case Key.R when Keyboard.Modifiers == ModifierKeys.None:
                 RotateCurrentImage();
                 e.Handled = true;
@@ -589,6 +624,9 @@ public partial class FullscreenViewer : Window
             Cursor = Cursors.Arrow;
             _cursorTimer.Stop();
             _cursorTimer.Start();
+
+            if (!_filmstripPinned && pos.Y > ActualHeight - 120)
+                ShowFilmstrip();
         }
         _lastMousePos = pos;
     }
@@ -635,11 +673,243 @@ public partial class FullscreenViewer : Window
         }
     }
 
+    private void ImageScroller_ManipulationStarting(object? sender, ManipulationStartingEventArgs e)
+    {
+        e.ManipulationContainer = ImageScroller;
+        e.Mode = ManipulationModes.Scale | ManipulationModes.Translate;
+        _manipulationCumulativeX = 0;
+        e.Handled = true;
+    }
+
+    private void ImageScroller_ManipulationDelta(object? sender, ManipulationDeltaEventArgs e)
+    {
+        double scaleX = e.DeltaManipulation.Scale.X;
+        double scaleY = e.DeltaManipulation.Scale.Y;
+        double avgScale = (scaleX + scaleY) / 2.0;
+
+        bool isPinching = Math.Abs(avgScale - 1.0) > 0.001;
+
+        if (isPinching)
+        {
+            ApplyZoom(_zoomLevel * avgScale);
+        }
+        else if (!_isFitToScreen)
+        {
+            ImageScroller.ScrollToHorizontalOffset(
+                ImageScroller.HorizontalOffset - e.DeltaManipulation.Translation.X);
+            ImageScroller.ScrollToVerticalOffset(
+                ImageScroller.VerticalOffset - e.DeltaManipulation.Translation.Y);
+        }
+        else
+        {
+            _manipulationCumulativeX += e.DeltaManipulation.Translation.X;
+        }
+
+        e.Handled = true;
+    }
+
+    private void ImageScroller_ManipulationCompleted(object? sender, ManipulationCompletedEventArgs e)
+    {
+        const double swipeThreshold = 80;
+        if (_isFitToScreen)
+        {
+            if (_manipulationCumulativeX > swipeThreshold)
+                NavigatePrevious();
+            else if (_manipulationCumulativeX < -swipeThreshold)
+                NavigateNext();
+        }
+        _manipulationCumulativeX = 0;
+        e.Handled = true;
+    }
+
+    private void UpdateMiniMapVisibility()
+    {
+        if (_isFitToScreen)
+        {
+            MiniMapPanel.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            MiniMapPanel.Visibility = Visibility.Visible;
+            MiniMapImage.Source = DisplayImage.Source;
+            UpdateMiniMapLayout();
+        }
+    }
+
+    private void UpdateMiniMapLayout()
+    {
+        if (MiniMapPanel.Visibility != Visibility.Visible) return;
+
+        double canvasW = MiniMapCanvas.ActualWidth;
+        double canvasH = MiniMapCanvas.ActualHeight;
+        if (canvasW <= 0 || canvasH <= 0) return;
+
+        if (DisplayImage.Source is System.Windows.Media.Imaging.BitmapSource bmp)
+        {
+            double imgW = bmp.PixelWidth;
+            double imgH = bmp.PixelHeight;
+            double scale = Math.Min(canvasW / imgW, canvasH / imgH);
+            double mw = imgW * scale;
+            double mh = imgH * scale;
+            double mx = (canvasW - mw) / 2;
+            double my = (canvasH - mh) / 2;
+
+            Canvas.SetLeft(MiniMapImage, mx);
+            Canvas.SetTop(MiniMapImage, my);
+            MiniMapImage.Width = mw;
+            MiniMapImage.Height = mh;
+
+            double extentW = ImageScroller.ExtentWidth;
+            double extentH = ImageScroller.ExtentHeight;
+            if (extentW <= 0 || extentH <= 0) return;
+
+            double vpX = ImageScroller.HorizontalOffset / extentW * mw + mx;
+            double vpY = ImageScroller.VerticalOffset / extentH * mh + my;
+            double vpW = Math.Min(ImageScroller.ViewportWidth / extentW * mw, mw);
+            double vpH = Math.Min(ImageScroller.ViewportHeight / extentH * mh, mh);
+
+            Canvas.SetLeft(MiniMapViewport, vpX);
+            Canvas.SetTop(MiniMapViewport, vpY);
+            MiniMapViewport.Width = Math.Max(vpW, 4);
+            MiniMapViewport.Height = Math.Max(vpH, 4);
+        }
+    }
+
+    private void ImageScroller_ScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        UpdateMiniMapLayout();
+    }
+
+    private void MiniMap_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _miniMapDragging = true;
+        MiniMapPanel.CaptureMouse();
+        MiniMapNavigateTo(e.GetPosition(MiniMapCanvas));
+        e.Handled = true;
+    }
+
+    private void MiniMap_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_miniMapDragging)
+        {
+            MiniMapNavigateTo(e.GetPosition(MiniMapCanvas));
+            e.Handled = true;
+        }
+    }
+
+    private void MiniMap_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_miniMapDragging)
+        {
+            _miniMapDragging = false;
+            MiniMapPanel.ReleaseMouseCapture();
+            e.Handled = true;
+        }
+    }
+
+    private void MiniMapNavigateTo(Point canvasPos)
+    {
+        if (DisplayImage.Source is not System.Windows.Media.Imaging.BitmapSource bmp) return;
+
+        double canvasW = MiniMapCanvas.ActualWidth;
+        double canvasH = MiniMapCanvas.ActualHeight;
+        double imgW = bmp.PixelWidth;
+        double imgH = bmp.PixelHeight;
+        double scale = Math.Min(canvasW / imgW, canvasH / imgH);
+        double mw = imgW * scale;
+        double mh = imgH * scale;
+        double mx = (canvasW - mw) / 2;
+        double my = (canvasH - mh) / 2;
+
+        double relX = (canvasPos.X - mx) / mw;
+        double relY = (canvasPos.Y - my) / mh;
+        relX = Math.Clamp(relX, 0, 1);
+        relY = Math.Clamp(relY, 0, 1);
+
+        double targetH = relX * ImageScroller.ExtentWidth - ImageScroller.ViewportWidth / 2;
+        double targetV = relY * ImageScroller.ExtentHeight - ImageScroller.ViewportHeight / 2;
+        ImageScroller.ScrollToHorizontalOffset(targetH);
+        ImageScroller.ScrollToVerticalOffset(targetV);
+    }
+
+    private void ShowFilmstrip()
+    {
+        if (_filmstripVisible) return;
+        _filmstripVisible = true;
+        FadeIn(FilmstripPanel);
+        PositionIndicator.Margin = new Thickness(0, 0, 0, 100);
+        _filmstripFadeTimer.Stop();
+        _filmstripFadeTimer.Start();
+        SyncFilmstripSelection();
+    }
+
+    private void HideFilmstrip()
+    {
+        if (!_filmstripVisible) return;
+        _filmstripVisible = false;
+        FadeOut(FilmstripPanel);
+        PositionIndicator.Margin = new Thickness(0, 0, 0, 30);
+    }
+
+    private void ToggleFilmstripPin()
+    {
+        _filmstripPinned = !_filmstripPinned;
+        if (_filmstripPinned)
+        {
+            _filmstripFadeTimer.Stop();
+            ShowFilmstrip();
+        }
+        else
+        {
+            _filmstripFadeTimer.Start();
+        }
+    }
+
+    private void SyncFilmstripSelection()
+    {
+        if (_vm.SelectedItem is null) return;
+        _suppressFilmstripNav = true;
+        try
+        {
+            FilmstripList.SelectedItem = _vm.SelectedItem;
+            FilmstripList.ScrollIntoView(_vm.SelectedItem);
+        }
+        finally
+        {
+            _suppressFilmstripNav = false;
+        }
+    }
+
+    private void FilmstripList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressFilmstripNav) return;
+        if (FilmstripList.SelectedItem is not ImageItem item) return;
+
+        int idx = _vm.SortedImages.IndexOf(item);
+        if (idx < 0) return;
+
+        _vm.SelectedIndex = idx;
+        _vm.SelectedItem = item;
+        LoadCurrentImage();
+    }
+
+    private void Filmstrip_MouseEnter(object sender, MouseEventArgs e)
+    {
+        _filmstripFadeTimer.Stop();
+    }
+
+    private void Filmstrip_MouseLeave(object sender, MouseEventArgs e)
+    {
+        if (!_filmstripPinned)
+            _filmstripFadeTimer.Start();
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         _cursorTimer.Stop();
         _positionFadeTimer.Stop();
         _zoomFadeTimer.Stop();
+        _filmstripFadeTimer.Stop();
         _loadCts.Cancel();
         _loadCts.Dispose();
         _prefetch.Dispose();

@@ -1,3 +1,4 @@
+using ImageBrowse.Helpers;
 using ImageBrowse.Services;
 using System.Diagnostics;
 using System.Reflection;
@@ -10,11 +11,13 @@ namespace ImageBrowse.Views;
 public partial class AboutDialog : Window
 {
     private readonly UpdateService _updateService;
+    private readonly bool _enableAnimations;
 
-    public AboutDialog(UpdateService updateService)
+    public AboutDialog(UpdateService updateService, bool enableAnimations = true)
     {
         InitializeComponent();
         _updateService = updateService;
+        _enableAnimations = enableAnimations;
 
         Background = (System.Windows.Media.Brush)FindResource("BgPrimaryBrush");
         Foreground = (System.Windows.Media.Brush)FindResource("FgPrimaryBrush");
@@ -22,6 +25,8 @@ public partial class AboutDialog : Window
         var infoVersion = Assembly.GetEntryAssembly()?
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
         VersionText.Text = $"Version {infoVersion ?? "unknown"}";
+
+        Loaded += (_, _) => DialogAnimationHelper.AnimateOpen(this, _enableAnimations);
     }
 
     private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)

@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using ImageBrowse.Services;
 using ImageBrowse.ViewModels;
 
@@ -13,6 +14,11 @@ namespace ImageBrowse.Views;
 public partial class GalleryView : UserControl
 {
     public event Action<int>? SelectionCountChanged;
+
+    private static readonly DoubleAnimation FadeInAnim = new(0, 1, TimeSpan.FromMilliseconds(180))
+    {
+        EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+    };
 
     public GalleryView()
     {
@@ -23,6 +29,7 @@ public partial class GalleryView : UserControl
             int count = GalleryListBox.SelectedItems.Count;
             SelectionCountChanged?.Invoke(count);
         };
+        GalleryListBox.ItemContainerGenerator.StatusChanged += OnContainerStatusChanged;
         DataContextChanged += (_, _) =>
         {
             if (ViewModel is not null)
@@ -45,6 +52,23 @@ public partial class GalleryView : UserControl
         bool isEmpty = ViewModel.SortedImages.Count == 0 && !ViewModel.IsLoading
                        && !string.IsNullOrEmpty(ViewModel.CurrentPath);
         EmptyState.Visibility = isEmpty ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void OnContainerStatusChanged(object? sender, EventArgs e)
+    {
+        if (GalleryListBox.ItemContainerGenerator.Status != System.Windows.Controls.Primitives.GeneratorStatus.ContainersGenerated)
+            return;
+        if (ViewModel is null || !ViewModel.Settings.EnableAnimations) return;
+
+        for (int i = 0; i < GalleryListBox.Items.Count; i++)
+        {
+            if (GalleryListBox.ItemContainerGenerator.ContainerFromIndex(i) is not ListBoxItem container)
+                continue;
+            if (container.Tag is "revealed") continue;
+            container.Tag = "revealed";
+            container.Opacity = 0;
+            container.BeginAnimation(OpacityProperty, FadeInAnim);
+        }
     }
 
     private void OnScrollChanged(object sender, ScrollChangedEventArgs e)

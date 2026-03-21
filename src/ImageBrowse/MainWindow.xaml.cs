@@ -123,16 +123,19 @@ public partial class MainWindow : Window
                 OpenFullscreenViewer();
                 break;
             case nameof(MainViewModel.CurrentSortDirection):
-                SortDirectionIcon.Text = _vm.CurrentSortDirection == SortDirection.Ascending ? "\uE74A" : "\uE74B";
+                SyncSortSegments();
                 break;
             case nameof(MainViewModel.CurrentSortField):
-                SyncSortComboBox();
+                SyncSortSegments();
                 break;
             case nameof(MainViewModel.IsLoading):
                 HandleLoadingChanged(_vm.IsLoading);
                 break;
             case nameof(MainViewModel.IsFolderTreeVisible):
                 AnimateFolderTree(_vm.IsFolderTreeVisible);
+                break;
+            case nameof(MainViewModel.CurrentPath):
+                UpdateBreadcrumbs();
                 break;
         }
     }
@@ -271,14 +274,45 @@ public partial class MainWindow : Window
         timer.Start();
     }
 
-    private void SyncSortComboBox()
+    private void SyncSortSegments()
     {
-        foreach (ComboBoxItem item in SortFieldCombo.Items)
+        foreach (var child in SortSegments.Children)
         {
-            if (item.Tag is SortField field && field == _vm.CurrentSortField)
+            if (child is System.Windows.Controls.RadioButton rb && rb.Tag is SortField field)
             {
-                SortFieldCombo.SelectedItem = item;
-                break;
+                rb.IsChecked = field == _vm.CurrentSortField;
+                if (rb.IsChecked == true)
+                {
+                    string arrow = _vm.CurrentSortDirection == SortDirection.Ascending ? " \u25B2" : " \u25BC";
+                    string baseName = field switch
+                    {
+                        SortField.FileName => "Name",
+                        SortField.DateModified => "Modified",
+                        SortField.DateCreated => "Created",
+                        SortField.DateTaken => "Taken",
+                        SortField.FileSize => "Size",
+                        SortField.Dimensions => "Dims",
+                        SortField.FileType => "Type",
+                        SortField.Rating => "Rating",
+                        _ => field.ToString()
+                    };
+                    rb.Content = baseName + arrow;
+                }
+                else
+                {
+                    rb.Content = field switch
+                    {
+                        SortField.FileName => "Name",
+                        SortField.DateModified => "Modified",
+                        SortField.DateCreated => "Created",
+                        SortField.DateTaken => "Taken",
+                        SortField.FileSize => "Size",
+                        SortField.Dimensions => "Dims",
+                        SortField.FileType => "Type",
+                        SortField.Rating => "Rating",
+                        _ => field.ToString()
+                    };
+                }
             }
         }
     }
@@ -467,8 +501,20 @@ public partial class MainWindow : Window
             var path = AddressBar.Text.Trim();
             if (Directory.Exists(path))
                 _ = NavigateToPath(path);
+            ExitAddressBarEditMode();
             e.Handled = true;
         }
+        else if (e.Key == Key.Escape)
+        {
+            AddressBar.Text = _vm.CurrentPath;
+            ExitAddressBarEditMode();
+            e.Handled = true;
+        }
+    }
+
+    private void AddressBar_LostFocus(object sender, RoutedEventArgs e)
+    {
+        ExitAddressBarEditMode();
     }
 
     private async void BackButton_Click(object sender, RoutedEventArgs e)
@@ -508,12 +554,19 @@ public partial class MainWindow : Window
             _ = NavigateToPath(parent.FullName);
     }
 
-    private void SortFieldCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void SortSegment_Click(object sender, RoutedEventArgs e)
     {
-        if (_vm is not null && SortFieldCombo.SelectedItem is ComboBoxItem item && item.Tag is SortField field)
+        if (sender is not System.Windows.Controls.RadioButton rb || rb.Tag is not SortField field) return;
+
+        if (_vm.CurrentSortField == field)
+        {
+            _vm.ToggleSortDirectionCommand.Execute(null);
+        }
+        else
         {
             _vm.CurrentSortField = field;
         }
+        SyncSortSegments();
     }
 
     private void OpenFullscreenViewer()
@@ -603,6 +656,11 @@ public partial class MainWindow : Window
                 e.Handled = true;
                 break;
 
+            case Key.L when Keyboard.Modifiers == ModifierKeys.Control:
+                EnterAddressBarEditMode();
+                e.Handled = true;
+                break;
+
             case Key.F1:
                 OpenAboutDialog();
                 e.Handled = true;
@@ -673,6 +731,93 @@ public partial class MainWindow : Window
         }
     }
 
+    private void UpdateBreadcrumbs()
+    {
+        BreadcrumbItems.Items.Clear();
+        var path = _vm.CurrentPath;
+        if (string.IsNullOrEmpty(path)) return;
+
+        var segments = new List<(string Display, string FullPath)>();
+        var current = path;
+
+        while (!string.IsNullOrEmpty(current))
+        {
+            var dirInfo = new DirectoryInfo(current);
+            string display = dirInfo.Parent is null ? current : dirInfo.Name;
+            segments.Insert(0, (display, current));
+            current = dirInfo.Parent?.FullName;
+        }
+
+        for (int i = 0; i < segments.Count; i++)
+        {
+            if (i > 0)
+            {
+                var chevron = new System.Windows.Controls.TextBlock
+                {
+                    Text = "\uE76C",
+                    FontFamily = (System.Windows.Media.FontFamily)FindResource("IconFont"),
+                    FontSize = 9,
+                    Foreground = (System.Windows.Media.Brush)FindResource("FgMutedBrush"),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(2, 0, 2, 0)
+                };
+                BreadcrumbItems.Items.Add(chevron);
+            }
+
+            var seg = segments[i];
+            var btn = new Button
+            {
+                Content = seg.Display,
+                Tag = seg.FullPath,
+                FontSize = 12,
+                Cursor = System.Windows.Input.Cursors.Hand,
+                Foreground = (System.Windows.Media.Brush)FindResource("FgSecondaryBrush"),
+                Background = System.Windows.Media.Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Padding = new Thickness(4, 2, 4, 2),
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            btn.Click += BreadcrumbSegment_Click;
+            btn.MouseEnter += (s, _) =>
+            {
+                if (s is Button b) b.Foreground = (System.Windows.Media.Brush)FindResource("AccentBrush");
+            };
+            btn.MouseLeave += (s, _) =>
+            {
+                if (s is Button b) b.Foreground = (System.Windows.Media.Brush)FindResource("FgSecondaryBrush");
+            };
+            BreadcrumbItems.Items.Add(btn);
+        }
+    }
+
+    private void BreadcrumbSegment_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string segPath)
+            _ = NavigateToPath(segPath);
+    }
+
+    private void BreadcrumbBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.OriginalSource is System.Windows.Controls.TextBlock tb && tb.Parent is Button)
+            return;
+        EnterAddressBarEditMode();
+    }
+
+    private void EnterAddressBarEditMode()
+    {
+        BreadcrumbBar.Visibility = Visibility.Collapsed;
+        AddressBar.Visibility = Visibility.Visible;
+        AddressBar.Text = _vm.CurrentPath;
+        AddressBar.Focus();
+        AddressBar.SelectAll();
+    }
+
+    private void ExitAddressBarEditMode()
+    {
+        AddressBar.Visibility = Visibility.Collapsed;
+        BreadcrumbBar.Visibility = Visibility.Visible;
+    }
+
     private void OpenSettingsDialog()
     {
         var dialog = new SettingsDialog(_vm);
@@ -680,7 +825,7 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog() == true)
         {
             ApplyTheme(_vm.IsDarkTheme);
-            SyncSortComboBox();
+            SyncSortSegments();
         }
     }
 
@@ -692,7 +837,7 @@ public partial class MainWindow : Window
     private void ResetSortButton_Click(object sender, RoutedEventArgs e)
     {
         _vm.ResetFolderSortCommand.Execute(null);
-        SyncSortComboBox();
+        SyncSortSegments();
     }
 
     private void PrescanButton_Click(object sender, RoutedEventArgs e)
@@ -706,7 +851,7 @@ public partial class MainWindow : Window
         if (string.IsNullOrEmpty(currentPath))
             currentPath = _vm.Settings.StartupFolder;
 
-        var dialog = new PrescanDialog(_vm.Database, currentPath);
+        var dialog = new PrescanDialog(_vm.Database, currentPath, _vm.Settings.EnableAnimations);
         dialog.Owner = this;
         dialog.ShowDialog();
     }
@@ -718,7 +863,7 @@ public partial class MainWindow : Window
 
     private void OpenAboutDialog()
     {
-        var dialog = new AboutDialog(_updateService);
+        var dialog = new AboutDialog(_updateService, _vm.Settings.EnableAnimations);
         dialog.Owner = this;
         dialog.ShowDialog();
     }

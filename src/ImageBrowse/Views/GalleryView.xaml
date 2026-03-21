@@ -10,7 +10,7 @@
         <helpers:BoolToVisibilityConverter x:Key="BoolToVis" />
         <helpers:RatingToStarsConverter x:Key="RatingToStars" />
 
-        <!-- Shimmer style for loading placeholders -->
+        <!-- Shimmer style for loading placeholders (pulsing opacity) -->
         <Style x:Key="ShimmerRectangle" TargetType="Rectangle">
             <Setter Property="RadiusX" Value="4" />
             <Setter Property="RadiusY" Value="4" />
@@ -18,23 +18,15 @@
             <Setter Property="VerticalAlignment" Value="Stretch" />
             <Setter Property="Margin" Value="12" />
             <Setter Property="Visibility" Value="Collapsed" />
-            <Setter Property="Fill">
-                <Setter.Value>
-                    <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
-                        <GradientStop x:Name="g0" Color="{DynamicResource BgHover}" Offset="0" />
-                        <GradientStop x:Name="g1" Color="{DynamicResource BgTertiary}" Offset="0.5" />
-                        <GradientStop x:Name="g2" Color="{DynamicResource BgHover}" Offset="1" />
-                    </LinearGradientBrush>
-                </Setter.Value>
-            </Setter>
+            <Setter Property="Fill" Value="{DynamicResource BgHoverBrush}" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsThumbnailLoading}" Value="True">
                     <Setter Property="Visibility" Value="Visible" />
                     <DataTrigger.EnterActions>
                         <BeginStoryboard x:Name="ShimmerStory">
-                            <Storyboard RepeatBehavior="Forever">
-                                <DoubleAnimation Storyboard.TargetProperty="(Rectangle.Fill).(LinearGradientBrush.GradientStops)[1].Offset"
-                                                 From="-0.5" To="1.5" Duration="0:0:1.2" />
+                            <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                 From="0.3" To="1" Duration="0:0:0.8" />
                             </Storyboard>
                         </BeginStoryboard>
                     </DataTrigger.EnterActions>
@@ -210,8 +202,8 @@
                             </Border>
 
                             <!-- Rating overlay -->
-                            <TextBlock Text="{Binding Rating, Converter={StaticResource RatingToStars}}"
-                                       FontSize="11" Foreground="#FFD700"
+                            <helpers:RatingStarsControl Rating="{Binding Rating}"
+                                       StarSize="10"
                                        HorizontalAlignment="Left" VerticalAlignment="Bottom"
                                        Margin="6,0,0,6" />
 

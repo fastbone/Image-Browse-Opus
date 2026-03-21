@@ -1,3 +1,4 @@
+using ImageBrowse.Helpers;
 using ImageBrowse.Models;
 using ImageBrowse.Services;
 using ImageBrowse.ViewModels;
@@ -101,6 +102,8 @@ public partial class SettingsDialog : Window
 
         Background = (System.Windows.Media.Brush)FindResource("BgPrimaryBrush");
         Foreground = (System.Windows.Media.Brush)FindResource("FgPrimaryBrush");
+
+        Loaded += (_, _) => DialogAnimationHelper.AnimateOpen(this, vm.Settings.EnableAnimations);
     }
 
     private void UpdateCacheSizeText()

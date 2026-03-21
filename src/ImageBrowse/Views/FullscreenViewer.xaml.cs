@@ -60,6 +60,7 @@ public partial class FullscreenViewer : Window
     private uint _videoPixelW, _videoPixelH;
     private bool _videoZoomActive;
     private bool _videoMiniMapDragging;
+    private bool _videoFitToScreen;
 
     private static readonly float[] PlaybackSpeeds = [0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f];
     private int _speedIndex = 2; // 1.0x
@@ -219,17 +220,20 @@ public partial class FullscreenViewer : Window
             _videoPositionTimer.Stop();
             PlayPauseIcon.Text = "\uE768"; // Play
         });
+        _mediaPlayer.Playing += (_, _) => Dispatcher.BeginInvoke(ApplyVideoSizing);
     }
 
     private void ShowVideoView(ImageItem item)
     {
         _isVideoActive = true;
+        _videoFitToScreen = false;
         ImageScroller.Visibility = Visibility.Collapsed;
         VideoView.Visibility = Visibility.Visible;
         NavLeft.Visibility = Visibility.Collapsed;
         NavRight.Visibility = Visibility.Collapsed;
         FilmstripPanel.IsHitTestVisible = false;
         ResetVideoZoom();
+        ResetVideoViewSize();
 
         try
         {
@@ -384,6 +388,19 @@ public partial class FullscreenViewer : Window
         FadeOut(VideoControlBar);
     }
 
+    private void VideoControlBar_MouseEnter(object sender, MouseEventArgs e)
+    {
+        _controlBarFadeTimer.Stop();
+        _cursorTimer.Stop();
+        Cursor = Cursors.Arrow;
+    }
+
+    private void VideoControlBar_MouseLeave(object sender, MouseEventArgs e)
+    {
+        _controlBarFadeTimer.Start();
+        _cursorTimer.Start();
+    }
+
     private void VideoNavLeft_MouseEnter(object sender, MouseEventArgs e)
     {
         FadeIn(VideoNavLeft);
@@ -464,6 +481,46 @@ public partial class FullscreenViewer : Window
         if (_mediaPlayer is not null)
             _mediaPlayer.CropGeometry = "";
         VideoMiniMapPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private void ResetVideoViewSize()
+    {
+        VideoView.ClearValue(WidthProperty);
+        VideoView.ClearValue(HeightProperty);
+        VideoView.HorizontalAlignment = HorizontalAlignment.Stretch;
+        VideoView.VerticalAlignment = VerticalAlignment.Stretch;
+        VideoFitIcon.Text = "\uE73F";
+    }
+
+    private void ApplyVideoSizing()
+    {
+        if (_mediaPlayer is null) return;
+        uint pw = 0, ph = 0;
+        if (!_mediaPlayer.Size(0, ref pw, ref ph) || pw == 0 || ph == 0) return;
+        _videoPixelW = pw;
+        _videoPixelH = ph;
+
+        bool fitsNatively = pw < ActualWidth && ph < ActualHeight;
+
+        if (fitsNatively && !_videoFitToScreen)
+        {
+            VideoView.Width = pw;
+            VideoView.Height = ph;
+            VideoView.HorizontalAlignment = HorizontalAlignment.Center;
+            VideoView.VerticalAlignment = VerticalAlignment.Center;
+            VideoFitIcon.Text = "\uE740";
+        }
+        else
+        {
+            ResetVideoViewSize();
+            _videoFitToScreen = true;
+        }
+    }
+
+    private void VideoFitToggle_Click(object sender, RoutedEventArgs e)
+    {
+        _videoFitToScreen = !_videoFitToScreen;
+        ApplyVideoSizing();
     }
 
     private void UpdateVideoMiniMap()
@@ -1132,6 +1189,19 @@ public partial class FullscreenViewer : Window
             {
                 ShowFilmstrip();
             }
+        }
+        _lastMousePos = pos;
+    }
+
+    private void VideoOverlay_MouseMove(object sender, MouseEventArgs e)
+    {
+        var pos = e.GetPosition(this);
+        if (Math.Abs(pos.X - _lastMousePos.X) > 3 || Math.Abs(pos.Y - _lastMousePos.Y) > 3)
+        {
+            Cursor = Cursors.Arrow;
+            _cursorTimer.Stop();
+            _cursorTimer.Start();
+            ShowVideoControlBar();
         }
         _lastMousePos = pos;
     }

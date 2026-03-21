@@ -58,16 +58,19 @@
 
         <!-- Video player (hidden when viewing images) -->
         <vlc:VideoView x:Name="VideoView" Visibility="Collapsed" Background="Black">
-            <Grid>
+            <Grid Background="Transparent" MouseMove="VideoOverlay_MouseMove">
                 <!-- Video control bar (bottom, auto-hides) -->
                 <Border x:Name="VideoControlBar" Opacity="0" IsHitTestVisible="True"
                         Background="#CC000000" VerticalAlignment="Bottom"
-                        Height="50" Cursor="Arrow">
+                        Height="50" Cursor="Arrow"
+                        MouseEnter="VideoControlBar_MouseEnter"
+                        MouseLeave="VideoControlBar_MouseLeave">
                     <Grid Margin="16,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
@@ -112,8 +115,18 @@
                                        Foreground="White" VerticalAlignment="Center" />
                         </Border>
 
+                        <!-- Expand/Fit toggle -->
+                        <Button x:Name="VideoFitButton" Grid.Column="5"
+                                Background="Transparent" BorderThickness="0"
+                                Width="36" Height="36" Cursor="Hand"
+                                Click="VideoFitToggle_Click" VerticalAlignment="Center">
+                            <TextBlock x:Name="VideoFitIcon" Text="&#xE740;"
+                                       FontFamily="{DynamicResource IconFont}" FontSize="16"
+                                       Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Button>
+
                         <!-- Volume -->
-                        <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Center">
                             <Button x:Name="MuteButton" Background="Transparent" BorderThickness="0"
                                     Width="30" Height="30" Cursor="Hand" Click="Mute_Click">
                                 <TextBlock x:Name="VolumeIcon" Text="&#xE767;"

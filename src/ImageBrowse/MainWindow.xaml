@@ -231,7 +231,6 @@
             <!-- Folder tree -->
             <TreeView x:Name="FolderTree" Grid.Column="0"
                       SelectedItemChanged="FolderTree_SelectedItemChanged"
-                      MouseEnter="FolderTree_MouseEnter"
                       Padding="2" FontSize="13">
             </TreeView>
 

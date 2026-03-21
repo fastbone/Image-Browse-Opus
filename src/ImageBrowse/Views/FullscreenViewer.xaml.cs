@@ -128,7 +128,9 @@ public partial class FullscreenViewer : Window
         {
             e.Accepted = e.Item is ImageItem item && !item.IsFolder;
         };
+        _suppressFilmstripNav = true;
         FilmstripList.ItemsSource = _filmstripViewSource.View;
+        _suppressFilmstripNav = false;
 
         LoadCurrentImage(crossfade: false);
         _cursorTimer.Start();

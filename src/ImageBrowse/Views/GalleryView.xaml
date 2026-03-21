@@ -69,8 +69,7 @@
              HorizontalContentAlignment="Center"
              VerticalContentAlignment="Top"
              KeyDown="GalleryListBox_KeyDown"
-             MouseDoubleClick="GalleryListBox_MouseDoubleClick"
-             MouseEnter="GalleryListBox_MouseEnter">
+             MouseDoubleClick="GalleryListBox_MouseDoubleClick">
 
         <ListBox.ItemsPanel>
             <ItemsPanelTemplate>

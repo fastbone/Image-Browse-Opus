@@ -264,10 +264,25 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private IEnumerable<ImageItem> ApplySort(IEnumerable<ImageItem> items)
     {
-        var folders = items.Where(i => i.IsFolder)
-            .OrderBy(i => i.FileName, Helpers.NaturalSortComparer.Instance);
-
+        var folders = items.Where(i => i.IsFolder);
         var images = items.Where(i => !i.IsFolder);
+
+        var sortedFolders = CurrentSortField switch
+        {
+            SortField.FileName => CurrentSortDirection == SortDirection.Ascending
+                ? folders.OrderBy(i => i.FileName, Helpers.NaturalSortComparer.Instance)
+                : folders.OrderByDescending(i => i.FileName, Helpers.NaturalSortComparer.Instance),
+            SortField.DateModified => CurrentSortDirection == SortDirection.Ascending
+                ? folders.OrderBy(i => i.DateModified)
+                : folders.OrderByDescending(i => i.DateModified),
+            SortField.DateCreated => CurrentSortDirection == SortDirection.Ascending
+                ? folders.OrderBy(i => i.DateCreated)
+                : folders.OrderByDescending(i => i.DateCreated),
+            _ => CurrentSortDirection == SortDirection.Ascending
+                ? folders.OrderBy(i => i.FileName, Helpers.NaturalSortComparer.Instance)
+                : folders.OrderByDescending(i => i.FileName, Helpers.NaturalSortComparer.Instance),
+        };
+
         var sortedImages = CurrentSortField switch
         {
             SortField.FileName => CurrentSortDirection == SortDirection.Ascending
@@ -297,7 +312,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             _ => images.OrderBy(i => i.FileName, Helpers.NaturalSortComparer.Instance)
         };
 
-        return folders.Concat(sortedImages);
+        return sortedFolders.Concat(sortedImages);
     }
 
     partial void OnCurrentSortFieldChanged(SortField value)

@@ -71,6 +71,21 @@ public partial class SettingsDialog : Window
             ("XBM/XPM", [".xbm", ".xpm"]),
             ("CUR", [".cur"]),
         ]),
+        ("Video", [
+            ("MP4", [".mp4"]),
+            ("MKV", [".mkv"]),
+            ("AVI", [".avi"]),
+            ("MOV", [".mov"]),
+            ("WebM", [".webm"]),
+            ("WMV", [".wmv"]),
+            ("FLV", [".flv"]),
+            ("M4V", [".m4v"]),
+            ("MPEG", [".mpg", ".mpeg"]),
+            ("MPEG-TS", [".ts", ".mts", ".m2ts"]),
+            ("3GP", [".3gp"]),
+            ("OGV", [".ogv"]),
+            ("VOB", [".vob"]),
+        ]),
     ];
 
     public SettingsDialog(MainViewModel vm)

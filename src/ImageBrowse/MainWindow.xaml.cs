@@ -61,6 +61,7 @@ public partial class MainWindow : Window
         }
 
         _ = CheckForUpdatesInBackground();
+        FocusGallery();
     }
 
     private async Task HandleStartupPath(string path)
@@ -465,10 +466,9 @@ public partial class MainWindow : Window
         }
     }
 
-    private void FolderTree_MouseEnter(object sender, MouseEventArgs e)
+    private void FocusGallery()
     {
-        if (sender is TreeView tv)
-            Keyboard.Focus(tv);
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, Gallery.FocusGallery);
     }
 
     private void FolderTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -574,6 +574,7 @@ public partial class MainWindow : Window
         var viewer = new FullscreenViewer(_vm);
         viewer.Closed += (_, _) => _vm.ExitFullscreen();
         viewer.ShowDialog();
+        FocusGallery();
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -816,6 +817,7 @@ public partial class MainWindow : Window
     {
         AddressBar.Visibility = Visibility.Collapsed;
         BreadcrumbBar.Visibility = Visibility.Visible;
+        FocusGallery();
     }
 
     private void OpenSettingsDialog()
@@ -827,6 +829,7 @@ public partial class MainWindow : Window
             ApplyTheme(_vm.IsDarkTheme);
             SyncSortSegments();
         }
+        FocusGallery();
     }
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
@@ -854,6 +857,7 @@ public partial class MainWindow : Window
         var dialog = new PrescanDialog(_vm.Database, currentPath, _vm.Settings.EnableAnimations);
         dialog.Owner = this;
         dialog.ShowDialog();
+        FocusGallery();
     }
 
     private void AboutButton_Click(object sender, RoutedEventArgs e)
@@ -866,6 +870,7 @@ public partial class MainWindow : Window
         var dialog = new AboutDialog(_updateService, _vm.Settings.EnableAnimations);
         dialog.Owner = this;
         dialog.ShowDialog();
+        FocusGallery();
     }
 
     private void UpdateNotification_MouseDown(object sender, MouseButtonEventArgs e)

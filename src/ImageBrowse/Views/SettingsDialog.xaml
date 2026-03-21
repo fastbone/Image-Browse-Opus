@@ -99,6 +99,8 @@
                                    Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,8" />
                         <CheckBox x:Name="ConfirmDeleteCheck" Content="Confirm before deleting files"
                                   Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" Margin="0,0,0,12" />
+                        <CheckBox x:Name="BossModeCheck" Content="Double-press Escape to quit application (Boss Mode)"
+                                  Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" Margin="0,0,0,12" />
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <Button Content="Clear Thumbnail Cache"
                                     Style="{DynamicResource ToolbarButton}" Padding="12,6"

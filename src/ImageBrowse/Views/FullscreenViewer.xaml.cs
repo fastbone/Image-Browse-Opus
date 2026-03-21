@@ -23,6 +23,8 @@ public partial class FullscreenViewer : Window
     [StructLayout(LayoutKind.Sequential)]
     private struct POINT { public int X, Y; }
 
+    public DateTime LastEscapePress { get; private set; } = DateTime.MinValue;
+
     private readonly MainViewModel _vm;
     private readonly ImagePrefetchService _prefetch;
     private double _zoomLevel = 1.0;
@@ -922,6 +924,10 @@ public partial class FullscreenViewer : Window
         switch (e.Key)
         {
             case Key.Escape:
+                LastEscapePress = DateTime.UtcNow;
+                Close();
+                break;
+
             case Key.Enter:
                 Close();
                 break;

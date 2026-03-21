@@ -4,11 +4,14 @@ using ImageBrowse.ViewModels;
 using ImageBrowse.Views;
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ImageBrowse;
@@ -28,6 +31,29 @@ public partial class MainWindow : Window
     private double _folderTreeWidth = 240;
     private const double FolderTreeAnimDuration = 200;
     private const double FolderTreeMinWidth = 120;
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr SHGetFileInfo(string pszPath, uint dwFileAttributes,
+        ref SHFILEINFO psfi, uint cbSizeFileInfo, uint uFlags);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool DestroyIcon(IntPtr hIcon);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct SHFILEINFO
+    {
+        public IntPtr hIcon;
+        public int iIcon;
+        public uint dwAttributes;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+        public string szDisplayName;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)]
+        public string szTypeName;
+    }
+
+    private const uint SHGFI_ICON = 0x000000100;
+    private const uint SHGFI_SMALLICON = 0x000000001;
 
     public MainWindow(string? startupPath = null)
     {
@@ -377,31 +403,31 @@ public partial class MainWindow : Window
         foreach (var drive in DriveInfo.GetDrives())
         {
             if (!drive.IsReady) continue;
-            var item = CreateTreeItem(drive.RootDirectory, icon: "\uEDA2");
+            var item = CreateTreeItem(drive.RootDirectory);
             FolderTree.Items.Add(item);
         }
 
-        AddSpecialFolder("Pictures", Environment.SpecialFolder.MyPictures, "\uEB9F");
-        AddSpecialFolder("Desktop", Environment.SpecialFolder.Desktop, "\uE7F4");
-        AddSpecialFolder("Documents", Environment.SpecialFolder.MyDocuments, "\uE8A5");
-        AddSpecialFolder("Downloads", GetDownloadsPath(), "\uE896");
+        AddSpecialFolder("Pictures", Environment.SpecialFolder.MyPictures);
+        AddSpecialFolder("Desktop", Environment.SpecialFolder.Desktop);
+        AddSpecialFolder("Documents", Environment.SpecialFolder.MyDocuments);
+        AddSpecialFolder("Downloads", GetDownloadsPath());
     }
 
-    private void AddSpecialFolder(string label, Environment.SpecialFolder folder, string icon)
+    private void AddSpecialFolder(string label, Environment.SpecialFolder folder)
     {
         var path = Environment.GetFolderPath(folder);
         if (Directory.Exists(path))
         {
-            var item = CreateTreeItem(new DirectoryInfo(path), label, icon);
+            var item = CreateTreeItem(new DirectoryInfo(path), label);
             FolderTree.Items.Insert(0, item);
         }
     }
 
-    private void AddSpecialFolder(string label, string? path, string icon)
+    private void AddSpecialFolder(string label, string? path)
     {
         if (path is not null && Directory.Exists(path))
         {
-            var item = CreateTreeItem(new DirectoryInfo(path), label, icon);
+            var item = CreateTreeItem(new DirectoryInfo(path), label);
             FolderTree.Items.Insert(0, item);
         }
     }
@@ -411,8 +437,9 @@ public partial class MainWindow : Window
         return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
     }
 
-    private TreeViewItem CreateTreeItem(DirectoryInfo dir, string? displayName = null, string icon = "\uED41")
+    private TreeViewItem CreateTreeItem(DirectoryInfo dir, string? displayName = null)
     {
+        var icon = GetShellIcon(dir.FullName);
         var item = new TreeViewItem
         {
             Header = CreateTreeHeader(icon, displayName ?? dir.Name),
@@ -426,25 +453,46 @@ public partial class MainWindow : Window
         return item;
     }
 
-    private StackPanel CreateTreeHeader(string icon, string label)
+    private static StackPanel CreateTreeHeader(ImageSource? icon, string label)
     {
         var panel = new StackPanel { Orientation = Orientation.Horizontal };
-        panel.Children.Add(new TextBlock
+        if (icon is not null)
         {
-            Text = icon,
-            FontFamily = (FontFamily)FindResource("IconFont"),
-            FontSize = 14,
-            Foreground = (Brush)FindResource("FgMutedBrush"),
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(0, 0, 8, 0),
-            Width = 18
-        });
+            panel.Children.Add(new Image
+            {
+                Source = icon,
+                Width = 16,
+                Height = 16,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 6, 0)
+            });
+        }
         panel.Children.Add(new TextBlock
         {
             Text = label,
             VerticalAlignment = VerticalAlignment.Center
         });
         return panel;
+    }
+
+    private static ImageSource? GetShellIcon(string path)
+    {
+        var shfi = new SHFILEINFO();
+        var result = SHGetFileInfo(path, 0, ref shfi, (uint)Marshal.SizeOf(shfi),
+            SHGFI_ICON | SHGFI_SMALLICON);
+        if (result == IntPtr.Zero || shfi.hIcon == IntPtr.Zero)
+            return null;
+        try
+        {
+            var source = Imaging.CreateBitmapSourceFromHIcon(
+                shfi.hIcon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            source.Freeze();
+            return source;
+        }
+        finally
+        {
+            DestroyIcon(shfi.hIcon);
+        }
     }
 
     private void TreeItem_Expanded(object sender, RoutedEventArgs e)
@@ -597,12 +645,19 @@ public partial class MainWindow : Window
         viewer.Owner = this;
         viewer.Closed += (_, _) => _vm.ExitFullscreen();
         viewer.ShowDialog();
+
+        if (_vm.Settings.BossModeEnabled && viewer.LastEscapePress > DateTime.MinValue)
+        {
+            _lastEscapePress = viewer.LastEscapePress;
+            ShowEscapeToast();
+        }
+
         FocusGallery();
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape)
+        if (e.Key == Key.Escape && _vm.Settings.BossModeEnabled)
         {
             var now = DateTime.UtcNow;
             if ((now - _lastEscapePress).TotalMilliseconds < 2000)

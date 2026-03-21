@@ -208,7 +208,7 @@ public partial class GalleryView : UserControl
     {
         if (ViewModel is null) return;
         var items = GalleryListBox.SelectedItems.Cast<Models.ImageItem>()
-            .Where(i => !i.IsFolder).ToList();
+            .Where(i => !i.IsFolder && !i.IsVideo).ToList();
         if (items.Count == 0) return;
 
         int failed = 0;

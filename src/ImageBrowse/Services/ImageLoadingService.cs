@@ -25,10 +25,22 @@ public sealed class ImageLoadingService
         ".jfif", ".wbmp", ".xbm", ".xpm"
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
+    private static readonly FrozenSet<string> VideoExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ".mp4", ".mkv", ".avi", ".mov", ".webm", ".wmv", ".flv", ".m4v",
+        ".mpg", ".mpeg", ".ts", ".3gp", ".ogv", ".vob", ".mts", ".m2ts"
+    }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+
     public static bool IsSupported(string filePath)
     {
         var ext = Path.GetExtension(filePath);
-        return !string.IsNullOrEmpty(ext) && SupportedExtensions.Contains(ext);
+        return !string.IsNullOrEmpty(ext) && (SupportedExtensions.Contains(ext) || VideoExtensions.Contains(ext));
+    }
+
+    public static bool IsVideoFile(string filePath)
+    {
+        var ext = Path.GetExtension(filePath);
+        return !string.IsNullOrEmpty(ext) && VideoExtensions.Contains(ext);
     }
 
     public static IEnumerable<string> GetSupportedFiles(string directoryPath)

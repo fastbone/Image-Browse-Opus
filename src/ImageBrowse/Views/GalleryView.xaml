@@ -45,10 +45,10 @@
             <TextBlock Text="&#xEB9F;" FontFamily="{DynamicResource IconFont}"
                        FontSize="48" HorizontalAlignment="Center"
                        Foreground="{DynamicResource FgMutedBrush}" Margin="0,0,0,12" />
-            <TextBlock Text="No images in this folder" FontSize="16" FontWeight="Medium"
+            <TextBlock Text="No media in this folder" FontSize="16" FontWeight="Medium"
                        Foreground="{DynamicResource FgSecondaryBrush}" HorizontalAlignment="Center"
                        Margin="0,0,0,6" />
-            <TextBlock Text="Browse to a folder containing images, or try a subfolder"
+            <TextBlock Text="Browse to a folder containing images or videos"
                        FontSize="13" Foreground="{DynamicResource FgMutedBrush}"
                        HorizontalAlignment="Center" />
         </StackPanel>
@@ -190,6 +190,46 @@
 
                             <!-- Shimmer loading placeholder -->
                             <Rectangle Style="{StaticResource ShimmerRectangle}" />
+
+                            <!-- Video play icon overlay (centered) -->
+                            <Border Background="#88000000" Width="36" Height="36"
+                                    CornerRadius="18"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    IsHitTestVisible="False">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsVideo}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Text="&#xE768;" FontFamily="{DynamicResource IconFont}"
+                                           FontSize="16" Foreground="White"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Margin="2,0,0,0" />
+                            </Border>
+
+                            <!-- Video duration badge (bottom-right) -->
+                            <Border Background="#CC000000" CornerRadius="4"
+                                    Padding="5,2" Margin="0,0,6,6"
+                                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                    IsHitTestVisible="False">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsVideo}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Text="{Binding DurationDisplay}" FontSize="10"
+                                           Foreground="White" FontWeight="Medium" />
+                            </Border>
 
                             <!-- Tag indicator -->
                             <Border Background="{DynamicResource AccentBrush}"

@@ -44,6 +44,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
             if (item is null || item.IsFolder)
                 return "";
             var parts = new List<string>();
+            if (item.IsVideo && item.Duration.HasValue)
+                parts.Add(item.DurationDisplay);
             if (item.ImageWidth > 0 && item.ImageHeight > 0)
                 parts.Add($"{item.ImageWidth} × {item.ImageHeight}");
             if (item.FileSize > 0)
@@ -78,6 +80,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _currentSortDirection = Settings.DefaultSortDirection;
 
         _thumbnailService.ThumbnailReady += OnThumbnailReady;
+        _thumbnailService.VideoThumbnailReady += OnVideoThumbnailReady;
         _thumbnailService.ThumbnailFailed += OnThumbnailFailed;
         _folderThumbnailService.FolderThumbnailReady += OnFolderThumbnailReady;
     }
@@ -160,7 +163,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
                             DateModified = fi.LastWriteTime,
                             DateCreated = fi.CreationTime,
                             Rating = _db.GetRating(f),
-                            IsTagged = _db.GetTagged(f)
+                            IsTagged = _db.GetTagged(f),
+                            IsVideo = ImageLoadingService.IsVideoFile(f)
                         };
                     })
                     .ToList();
@@ -174,7 +178,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
             await Task.Run(() =>
             {
-                foreach (var item in _allImages.Where(i => !i.IsFolder))
+                foreach (var item in _allImages.Where(i => !i.IsFolder && !i.IsVideo))
                 {
                     ct.ThrowIfCancellationRequested();
                     _metadataService.LoadMetadata(item);
@@ -192,11 +196,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
             ApplySortAndPopulate();
 
-            int imageCount = _allImages.Count(i => !i.IsFolder);
+            int imageCount = _allImages.Count(i => !i.IsFolder && !i.IsVideo);
+            int videoCount = _allImages.Count(i => i.IsVideo);
             int folderCount = _allImages.Count(i => i.IsFolder);
-            StatusText = folderCount > 0
-                ? $"{folderCount:N0} folder{(folderCount != 1 ? "s" : "")}, {imageCount:N0} image{(imageCount != 1 ? "s" : "")}"
-                : $"{imageCount:N0} image{(imageCount != 1 ? "s" : "")}";
+            StatusText = FormatStatusText(folderCount, imageCount, videoCount);
 
             RequestThumbnailsForRange(0, Math.Min(SortedImages.Count, GetVisiblePageSize() * 2));
 
@@ -519,12 +522,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _db.DeleteThumbnail(item.FilePath);
         _allImages.Remove(item);
         SortedImages.Remove(item);
-
-        int imageCount = _allImages.Count(i => !i.IsFolder);
-        int folderCount = _allImages.Count(i => i.IsFolder);
-        StatusText = folderCount > 0
-            ? $"{folderCount:N0} folder{(folderCount != 1 ? "s" : "")}, {imageCount:N0} image{(imageCount != 1 ? "s" : "")}"
-            : $"{imageCount:N0} image{(imageCount != 1 ? "s" : "")}";
+        UpdateStatusCount();
     }
 
     public System.Windows.Media.Imaging.BitmapSource? LoadFullImage(string filePath)
@@ -606,6 +604,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
         });
     }
 
+    private void OnVideoThumbnailReady(string filePath, System.Windows.Media.Imaging.BitmapSource thumbnail, int width, int height, TimeSpan duration)
+    {
+        Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            var item = SortedImages.FirstOrDefault(i => i.FilePath == filePath);
+            if (item is not null)
+            {
+                item.Thumbnail = thumbnail;
+                item.IsThumbnailLoading = false;
+                item.Duration = duration;
+                if (item.ImageWidth == 0 && width > 0) item.ImageWidth = width;
+                if (item.ImageHeight == 0 && height > 0) item.ImageHeight = height;
+            }
+            UpdateThumbnailProgress();
+        });
+    }
+
     private void OnThumbnailFailed(string filePath)
     {
         Application.Current?.Dispatcher.BeginInvoke(() =>
@@ -651,12 +666,27 @@ public partial class MainViewModel : ObservableObject, IDisposable
             _allImages.Remove(item);
             SortedImages.Remove(item);
         }
+        UpdateStatusCount();
+    }
 
-        int imageCount = _allImages.Count(i => !i.IsFolder);
+    private void UpdateStatusCount()
+    {
+        int imageCount = _allImages.Count(i => !i.IsFolder && !i.IsVideo);
+        int videoCount = _allImages.Count(i => i.IsVideo);
         int folderCount = _allImages.Count(i => i.IsFolder);
-        StatusText = folderCount > 0
-            ? $"{folderCount:N0} folder{(folderCount != 1 ? "s" : "")}, {imageCount:N0} image{(imageCount != 1 ? "s" : "")}"
-            : $"{imageCount:N0} image{(imageCount != 1 ? "s" : "")}";
+        StatusText = FormatStatusText(folderCount, imageCount, videoCount);
+    }
+
+    private static string FormatStatusText(int folders, int images, int videos)
+    {
+        var parts = new List<string>();
+        if (folders > 0)
+            parts.Add($"{folders:N0} folder{(folders != 1 ? "s" : "")}");
+        if (images > 0)
+            parts.Add($"{images:N0} image{(images != 1 ? "s" : "")}");
+        if (videos > 0)
+            parts.Add($"{videos:N0} video{(videos != 1 ? "s" : "")}");
+        return parts.Count > 0 ? string.Join(", ", parts) : "Empty";
     }
 
     public void Dispose()
@@ -664,6 +694,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _loadCts?.Cancel();
         _loadCts?.Dispose();
         _thumbnailService.ThumbnailReady -= OnThumbnailReady;
+        _thumbnailService.VideoThumbnailReady -= OnVideoThumbnailReady;
         _thumbnailService.ThumbnailFailed -= OnThumbnailFailed;
         _thumbnailService.Dispose();
         _folderThumbnailService.FolderThumbnailReady -= OnFolderThumbnailReady;

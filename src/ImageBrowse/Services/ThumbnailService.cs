@@ -11,6 +11,7 @@ namespace ImageBrowse.Services;
 public sealed class ThumbnailService : IDisposable
 {
     private readonly DatabaseService _db;
+    private readonly Lazy<VideoThumbnailService> _videoThumbService = new(() => new VideoThumbnailService());
     private readonly ConcurrentDictionary<string, byte> _inProgress = new();
     private readonly SemaphoreSlim _semaphore;
     private CancellationTokenSource _cts = new();
@@ -35,6 +36,7 @@ public sealed class ThumbnailService : IDisposable
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     public event Action<string, BitmapSource, int, int>? ThumbnailReady;
+    public event Action<string, BitmapSource, int, int, TimeSpan>? VideoThumbnailReady;
     public event Action<string>? ThumbnailFailed;
 
     public ThumbnailService(DatabaseService db)
@@ -97,6 +99,12 @@ public sealed class ThumbnailService : IDisposable
     {
         try
         {
+            if (ImageLoadingService.IsVideoFile(filePath))
+            {
+                GenerateVideoThumbnail(filePath, lastModified, fileSize);
+                return;
+            }
+
             string? contentHash = null;
             try { contentHash = ContentHashService.ComputeHash(filePath, fileSize); } catch { }
 
@@ -155,6 +163,36 @@ public sealed class ThumbnailService : IDisposable
             bitmap.Freeze();
 
             ThumbnailReady?.Invoke(filePath, bitmap, width, height);
+        }
+        catch
+        {
+            ThumbnailFailed?.Invoke(filePath);
+        }
+    }
+
+    private void GenerateVideoThumbnail(string filePath, DateTime lastModified, long fileSize)
+    {
+        try
+        {
+            var result = _videoThumbService.Value.GenerateThumbnail(filePath);
+            if (result is null)
+            {
+                ThumbnailFailed?.Invoke(filePath);
+                return;
+            }
+
+            var (data, width, height, duration) = result.Value;
+            _db.SaveThumbnail(filePath, lastModified, fileSize, data, width, height, null);
+
+            using var stream = new MemoryStream(data);
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.StreamSource = stream;
+            bitmap.EndInit();
+            bitmap.Freeze();
+
+            VideoThumbnailReady?.Invoke(filePath, bitmap, width, height, duration);
         }
         catch
         {
@@ -283,5 +321,7 @@ public sealed class ThumbnailService : IDisposable
         _cts.Cancel();
         _cts.Dispose();
         _semaphore.Dispose();
+        if (_videoThumbService.IsValueCreated)
+            _videoThumbService.Value.Dispose();
     }
 }

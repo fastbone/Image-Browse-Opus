@@ -1,6 +1,7 @@
 using ImageBrowse.Models;
 using ImageBrowse.Services;
 using ImageBrowse.ViewModels;
+using LibVLCSharp.Shared;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -46,6 +47,14 @@ public partial class FullscreenViewer : Window
     private const double MaxZoom = 20.0;
     private const int CrossfadeDurationMs = 150;
 
+    private LibVLC? _libVLC;
+    private LibVLCSharp.Shared.MediaPlayer? _mediaPlayer;
+    private bool _isVideoActive;
+    private bool _isSeeking;
+    private readonly DispatcherTimer _videoPositionTimer;
+    private readonly DispatcherTimer _controlBarFadeTimer;
+    private bool _controlBarVisible;
+
     public FullscreenViewer(MainViewModel vm)
     {
         InitializeComponent();
@@ -56,7 +65,18 @@ public partial class FullscreenViewer : Window
         _cursorTimer.Tick += (_, _) =>
         {
             Cursor = Cursors.None;
+            if (_isVideoActive) HideVideoControlBar();
             _cursorTimer.Stop();
+        };
+
+        _videoPositionTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+        _videoPositionTimer.Tick += (_, _) => UpdateVideoPosition();
+
+        _controlBarFadeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        _controlBarFadeTimer.Tick += (_, _) =>
+        {
+            HideVideoControlBar();
+            _controlBarFadeTimer.Stop();
         };
 
         _positionFadeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
@@ -91,7 +111,7 @@ public partial class FullscreenViewer : Window
             if (idx < 0 || idx >= _vm.SortedImages.Count)
                 return ("", true);
             var i = _vm.SortedImages[idx];
-            return (i.FilePath, i.IsFolder);
+            return (i.FilePath, i.IsFolder || i.IsVideo);
         });
 
         _filmstripViewSource = new CollectionViewSource { Source = _vm.SortedImages };
@@ -109,6 +129,19 @@ public partial class FullscreenViewer : Window
     {
         var item = _vm.SelectedItem;
         if (item is null) return;
+
+        StopVideoPlayback();
+
+        if (item.IsVideo)
+        {
+            ShowVideoView(item);
+            UpdateInfo(item);
+            ShowPosition();
+            SyncFilmstripSelection();
+            return;
+        }
+
+        ShowImageView();
 
         _loadCts.Cancel();
         _loadCts = new CancellationTokenSource();
@@ -163,6 +196,187 @@ public partial class FullscreenViewer : Window
         UpdateInfo(item);
         ShowPosition();
         SyncFilmstripSelection();
+    }
+
+    private void EnsureVlcInitialized()
+    {
+        if (_libVLC is not null) return;
+        _libVLC = new LibVLC();
+        _mediaPlayer = new LibVLCSharp.Shared.MediaPlayer(_libVLC);
+        _mediaPlayer.EndReached += (_, _) => Dispatcher.BeginInvoke(() =>
+        {
+            _videoPositionTimer.Stop();
+            PlayPauseIcon.Text = "\uE768"; // Play
+        });
+    }
+
+    private void ShowVideoView(ImageItem item)
+    {
+        _isVideoActive = true;
+        ImageScroller.Visibility = Visibility.Collapsed;
+        VideoView.Visibility = Visibility.Visible;
+        NavLeft.Visibility = Visibility.Collapsed;
+        NavRight.Visibility = Visibility.Collapsed;
+
+        try
+        {
+            EnsureVlcInitialized();
+            VideoView.MediaPlayer = _mediaPlayer;
+
+            using var media = new Media(_libVLC!, item.FilePath, FromType.FromPath);
+            _mediaPlayer!.Play(media);
+            _videoPositionTimer.Start();
+            PlayPauseIcon.Text = "\uE769"; // Pause
+
+            if (_mediaPlayer.Volume != (int)VolumeSlider.Value)
+                _mediaPlayer.Volume = (int)VolumeSlider.Value;
+        }
+        catch (Exception ex)
+        {
+            _videoPositionTimer.Stop();
+            VideoTimeText.Text = "Error";
+            System.Diagnostics.Debug.WriteLine($"Video playback error: {ex.Message}");
+        }
+    }
+
+    private void ShowImageView()
+    {
+        if (!_isVideoActive) return;
+        _isVideoActive = false;
+        VideoView.Visibility = Visibility.Collapsed;
+        ImageScroller.Visibility = Visibility.Visible;
+        NavLeft.Visibility = Visibility.Visible;
+        NavRight.Visibility = Visibility.Visible;
+        HideVideoControlBar();
+    }
+
+    private void StopVideoPlayback()
+    {
+        if (_mediaPlayer is null) return;
+        _videoPositionTimer.Stop();
+
+        try
+        {
+            if (_mediaPlayer.IsPlaying)
+            {
+                var stopped = new ManualResetEventSlim(false);
+                void handler(object? s, EventArgs a) => stopped.Set();
+                _mediaPlayer.Stopped += handler;
+                _mediaPlayer.Stop();
+                stopped.Wait(2000);
+                _mediaPlayer.Stopped -= handler;
+            }
+        }
+        catch { }
+
+        VideoView.MediaPlayer = null;
+    }
+
+    private void ToggleVideoPlayPause()
+    {
+        if (_mediaPlayer is null) return;
+
+        if (_mediaPlayer.IsPlaying)
+        {
+            _mediaPlayer.Pause();
+            _videoPositionTimer.Stop();
+            PlayPauseIcon.Text = "\uE768"; // Play
+        }
+        else
+        {
+            _mediaPlayer.Play();
+            _videoPositionTimer.Start();
+            PlayPauseIcon.Text = "\uE769"; // Pause
+        }
+    }
+
+    private void UpdateVideoPosition()
+    {
+        if (_mediaPlayer is null || _isSeeking) return;
+
+        long time = _mediaPlayer.Time;
+        long length = _mediaPlayer.Length;
+        if (length <= 0) return;
+
+        VideoTimeText.Text = FormatTime(time);
+        VideoDurationText.Text = FormatTime(length);
+        VideoSeekBar.Value = (double)time / length * 1000;
+    }
+
+    private static string FormatTime(long ms)
+    {
+        var ts = TimeSpan.FromMilliseconds(ms);
+        return ts.TotalHours >= 1
+            ? ts.ToString(@"h\:mm\:ss")
+            : ts.ToString(@"m\:ss");
+    }
+
+    private void PlayPause_Click(object sender, RoutedEventArgs e) => ToggleVideoPlayPause();
+
+    private void SeekBar_PreviewMouseDown(object sender, MouseButtonEventArgs e) => _isSeeking = true;
+
+    private void SeekBar_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        _isSeeking = false;
+        if (_mediaPlayer is null) return;
+        long length = _mediaPlayer.Length;
+        if (length > 0)
+            _mediaPlayer.Time = (long)(VideoSeekBar.Value / 1000 * length);
+    }
+
+    private void SeekBar_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!_isSeeking || _mediaPlayer is null) return;
+        long length = _mediaPlayer.Length;
+        if (length > 0)
+            VideoTimeText.Text = FormatTime((long)(e.NewValue / 1000 * length));
+    }
+
+    private void Mute_Click(object sender, RoutedEventArgs e)
+    {
+        if (_mediaPlayer is null) return;
+        _mediaPlayer.Mute = !_mediaPlayer.Mute;
+        VolumeIcon.Text = _mediaPlayer.Mute ? "\uE74F" : "\uE767";
+    }
+
+    private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_mediaPlayer is null) return;
+        _mediaPlayer.Volume = (int)e.NewValue;
+    }
+
+    private void ShowVideoControlBar()
+    {
+        if (_controlBarVisible) return;
+        _controlBarVisible = true;
+        FadeIn(VideoControlBar);
+        _controlBarFadeTimer.Stop();
+        _controlBarFadeTimer.Start();
+    }
+
+    private void HideVideoControlBar()
+    {
+        if (!_controlBarVisible) return;
+        _controlBarVisible = false;
+        FadeOut(VideoControlBar);
+    }
+
+    private void VideoNavLeft_MouseEnter(object sender, MouseEventArgs e)
+    {
+        FadeIn(VideoNavLeft);
+        Cursor = Cursors.Arrow;
+    }
+
+    private void VideoNavRight_MouseEnter(object sender, MouseEventArgs e)
+    {
+        FadeIn(VideoNavRight);
+        Cursor = Cursors.Arrow;
+    }
+
+    private void VideoNavZone_MouseLeave(object sender, MouseEventArgs e)
+    {
+        FadeOut(VideoNavLeft);
+        FadeOut(VideoNavRight);
     }
 
     private void ResetZoom()
@@ -255,7 +469,12 @@ public partial class FullscreenViewer : Window
     {
         InfoFileName.Text = item.FileName;
 
-        if (item.ImageWidth > 0)
+        if (item.IsVideo && item.Duration.HasValue)
+        {
+            InfoDimensions.Text = item.DurationDisplay;
+            InfoDimensionsGrid.Visibility = Visibility.Visible;
+        }
+        else if (item.ImageWidth > 0)
         {
             InfoDimensions.Text = item.DimensionsDisplay;
             InfoDimensionsGrid.Visibility = Visibility.Visible;
@@ -420,6 +639,12 @@ public partial class FullscreenViewer : Window
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
+        if (_isVideoActive)
+        {
+            HandleVideoKeyDown(e);
+            if (e.Handled) return;
+        }
+
         switch (e.Key)
         {
             case Key.Escape:
@@ -428,10 +653,22 @@ public partial class FullscreenViewer : Window
                 break;
 
             case Key.Right:
-            case Key.Space:
             case Key.PageDown:
                 NavigateNext();
                 e.Handled = true;
+                break;
+
+            case Key.Space:
+                if (_isVideoActive)
+                {
+                    ToggleVideoPlayPause();
+                    e.Handled = true;
+                }
+                else
+                {
+                    NavigateNext();
+                    e.Handled = true;
+                }
                 break;
 
             case Key.Left:
@@ -531,6 +768,33 @@ public partial class FullscreenViewer : Window
         }
     }
 
+    private void HandleVideoKeyDown(KeyEventArgs e)
+    {
+        if (_mediaPlayer is null) return;
+        switch (e.Key)
+        {
+            case Key.Space:
+                ToggleVideoPlayPause();
+                e.Handled = true;
+                break;
+            case Key.Up:
+                _mediaPlayer.Volume = Math.Min(_mediaPlayer.Volume + 5, 100);
+                VolumeSlider.Value = _mediaPlayer.Volume;
+                e.Handled = true;
+                break;
+            case Key.Down:
+                _mediaPlayer.Volume = Math.Max(_mediaPlayer.Volume - 5, 0);
+                VolumeSlider.Value = _mediaPlayer.Volume;
+                e.Handled = true;
+                break;
+            case Key.M:
+                _mediaPlayer.Mute = !_mediaPlayer.Mute;
+                VolumeIcon.Text = _mediaPlayer.Mute ? "\uE74F" : "\uE767";
+                e.Handled = true;
+                break;
+        }
+    }
+
     private void DeleteCurrentImage()
     {
         var item = _vm.SelectedItem;
@@ -543,6 +807,9 @@ public partial class FullscreenViewer : Window
                 "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result != MessageBoxResult.Yes) return;
         }
+
+        if (item.IsVideo)
+            StopVideoPlayback();
 
         if (FileOperationService.MoveToRecycleBin(item.FilePath))
         {
@@ -567,7 +834,7 @@ public partial class FullscreenViewer : Window
     private async void RotateCurrentImage()
     {
         var item = _vm.SelectedItem;
-        if (item is null || item.IsFolder) return;
+        if (item is null || item.IsFolder || item.IsVideo) return;
 
         try
         {
@@ -625,8 +892,14 @@ public partial class FullscreenViewer : Window
             _cursorTimer.Stop();
             _cursorTimer.Start();
 
-            if (!_filmstripPinned && pos.Y > ActualHeight - 120)
+            if (_isVideoActive && pos.Y > ActualHeight - 80)
+            {
+                ShowVideoControlBar();
+            }
+            else if (!_filmstripPinned && pos.Y > ActualHeight - 120)
+            {
                 ShowFilmstrip();
+            }
         }
         _lastMousePos = pos;
     }
@@ -910,8 +1183,15 @@ public partial class FullscreenViewer : Window
         _positionFadeTimer.Stop();
         _zoomFadeTimer.Stop();
         _filmstripFadeTimer.Stop();
+        _videoPositionTimer.Stop();
+        _controlBarFadeTimer.Stop();
         _loadCts.Cancel();
         _loadCts.Dispose();
+
+        StopVideoPlayback();
+        _mediaPlayer?.Dispose();
+        _libVLC?.Dispose();
+
         _prefetch.Dispose();
         base.OnClosed(e);
     }

@@ -1,4 +1,5 @@
 using System.Windows;
+using LibVLCSharp.Shared;
 
 namespace ImageBrowse;
 
@@ -6,6 +7,7 @@ public partial class App : Application
 {
     private void Application_Startup(object sender, StartupEventArgs e)
     {
+        Core.Initialize();
         DispatcherUnhandledException += (_, args) =>
         {
             MessageBox.Show($"An unexpected error occurred:\n\n{args.Exception.Message}",

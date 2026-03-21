@@ -36,18 +36,36 @@ public partial class ImageItem : ObservableObject
 
     public bool IsFolder { get; init; }
     public bool IsParentFolder { get; init; }
+    public bool IsVideo { get; init; }
     public int FolderSubfolderCount { get; set; }
+    public TimeSpan? Duration { get; set; }
 
     public string DimensionsDisplay =>
         ImageWidth > 0 && ImageHeight > 0 ? $"{ImageWidth} × {ImageHeight}" : "";
 
     public string FileSizeDisplay => FormatFileSize(FileSize);
 
+    public string DurationDisplay => Duration.HasValue
+        ? Duration.Value.TotalHours >= 1
+            ? Duration.Value.ToString(@"h\:mm\:ss")
+            : Duration.Value.ToString(@"m\:ss")
+        : "";
+
     public string SubtitleDisplay => IsParentFolder
         ? "Parent folder"
         : IsFolder
             ? FormatFolderSubtitle()
-            : $"{DimensionsDisplay}  {FileSizeDisplay}";
+            : IsVideo
+                ? FormatVideoSubtitle()
+                : $"{DimensionsDisplay}  {FileSizeDisplay}";
+
+    private string FormatVideoSubtitle()
+    {
+        var parts = new List<string>();
+        if (Duration.HasValue) parts.Add(DurationDisplay);
+        if (FileSize > 0) parts.Add(FileSizeDisplay);
+        return parts.Count > 0 ? string.Join("  ", parts) : Extension;
+    }
 
     private string FormatFolderSubtitle()
     {

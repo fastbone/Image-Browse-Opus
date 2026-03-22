@@ -31,6 +31,7 @@ public partial class MainWindow : Window
     private double _folderTreeWidth = 240;
     private const double FolderTreeAnimDuration = 200;
     private const double FolderTreeMinWidth = 120;
+    private bool _updateReadyToApply;
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr SHGetFileInfo(string pszPath, uint dwFileAttributes,
@@ -125,7 +126,8 @@ public partial class MainWindow : Window
                 _ = NavigateToPath(startPath);
         }
 
-        _ = CheckForUpdatesInBackground();
+        if (_vm.Settings.CheckForUpdatesOnStartup)
+            _ = CheckForUpdatesInBackground();
         FocusGallery();
     }
 
@@ -160,10 +162,52 @@ public partial class MainWindow : Window
         try
         {
             var newVersion = await _updateService.CheckForUpdatesAsync();
-            if (newVersion is not null)
+            if (newVersion is null) return;
+
+            var dialog = new UpdatePromptDialog(newVersion, _vm.Settings.EnableAnimations);
+            dialog.Owner = this;
+            dialog.ShowDialog();
+
+            switch (dialog.Result)
             {
-                UpdateNotification.Text = $"Update {newVersion} available — click to update";
-                UpdateNotification.Visibility = Visibility.Visible;
+                case Models.UpdatePromptResult.InstallNow:
+                    UpdateNotification.Text = "Downloading update...";
+                    UpdateNotification.Visibility = Visibility.Visible;
+                    var downloaded = await _updateService.DownloadAsync(p =>
+                    {
+                        Dispatcher.Invoke(() => UpdateNotification.Text = $"Downloading update... {p}%");
+                    });
+                    if (downloaded)
+                    {
+                        _updateService.ApplyAndRestart();
+                    }
+                    else
+                    {
+                        UpdateNotification.Text = "Update download failed";
+                    }
+                    break;
+
+                case Models.UpdatePromptResult.InstallOnClose:
+                    UpdateNotification.Text = "Downloading update...";
+                    UpdateNotification.Visibility = Visibility.Visible;
+                    var success = await _updateService.DownloadAsync(p =>
+                    {
+                        Dispatcher.Invoke(() => UpdateNotification.Text = $"Downloading update... {p}%");
+                    });
+                    if (success)
+                    {
+                        _updateReadyToApply = true;
+                        UpdateNotification.Text = "Update ready \u2014 will install on close";
+                    }
+                    else
+                    {
+                        UpdateNotification.Text = "Update download failed";
+                    }
+                    break;
+
+                case Models.UpdatePromptResult.Ignore:
+                default:
+                    break;
             }
         }
         catch (Exception ex)
@@ -177,6 +221,9 @@ public partial class MainWindow : Window
     {
         SaveWindowBounds();
         _vm.Dispose();
+
+        if (_updateReadyToApply)
+            _updateService.ApplyOnExit();
     }
 
     private void SaveWindowBounds()

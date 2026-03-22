@@ -60,6 +60,33 @@ public sealed class UpdateService
         }
     }
 
+    public async Task<bool> DownloadAsync(Action<int>? progressCallback = null)
+    {
+        try
+        {
+            if (_pendingUpdate is null || _manager is null) return false;
+
+            await _manager.DownloadUpdatesAsync(_pendingUpdate, p => progressCallback?.Invoke(p));
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public void ApplyAndRestart()
+    {
+        if (_pendingUpdate is null || _manager is null) return;
+        _manager.ApplyUpdatesAndRestart(_pendingUpdate);
+    }
+
+    public void ApplyOnExit()
+    {
+        if (_pendingUpdate?.TargetFullRelease is null || _manager is null) return;
+        _manager.WaitExitThenApplyUpdates(_pendingUpdate.TargetFullRelease, silent: true, restart: true);
+    }
+
     private void EnsureManager()
     {
         _manager ??= new UpdateManager(new GithubSource(RepoUrl, null, false));

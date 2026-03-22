@@ -102,6 +102,7 @@ public partial class SettingsDialog : Window
 
         ConfirmDeleteCheck.IsChecked = vm.Settings.ConfirmBeforeDelete;
         BossModeCheck.IsChecked = vm.Settings.BossModeEnabled;
+        AutoUpdateCheck.IsChecked = vm.Settings.CheckForUpdatesOnStartup;
         EnableAnimationsCheck.IsChecked = vm.Settings.EnableAnimations;
 
         if (vm.IsDarkTheme)
@@ -287,6 +288,7 @@ public partial class SettingsDialog : Window
         _vm.Settings.ConfirmBeforeDelete = ConfirmDeleteCheck.IsChecked == true;
         _vm.Settings.BossModeEnabled = BossModeCheck.IsChecked == true;
         _vm.Settings.EnableAnimations = EnableAnimationsCheck.IsChecked == true;
+        _vm.Settings.CheckForUpdatesOnStartup = AutoUpdateCheck.IsChecked == true;
 
         bool isDark = DarkRadio.IsChecked == true;
         _vm.IsDarkTheme = isDark;

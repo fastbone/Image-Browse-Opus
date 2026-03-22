@@ -73,6 +73,12 @@ public sealed class SettingsService
         set => _db.SetSetting("boss_mode_enabled", value ? "true" : "false");
     }
 
+    public bool CheckForUpdatesOnStartup
+    {
+        get => _db.GetSetting("check_updates_on_startup", "true") == "true";
+        set => _db.SetSetting("check_updates_on_startup", value ? "true" : "false");
+    }
+
     public double WindowLeft
     {
         get => double.TryParse(_db.GetSetting("window_left"), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : double.NaN;

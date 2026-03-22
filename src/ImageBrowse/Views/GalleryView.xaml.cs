@@ -125,6 +125,11 @@ public partial class GalleryView : UserControl
     private void FocusSelectedItem()
     {
         if (ViewModel is null || ViewModel.SelectedIndex < 0) return;
+        if (ViewModel.SelectedIndex < ViewModel.SortedImages.Count)
+        {
+            GalleryListBox.ScrollIntoView(ViewModel.SortedImages[ViewModel.SelectedIndex]);
+            GalleryListBox.UpdateLayout();
+        }
         if (GalleryListBox.ItemContainerGenerator.ContainerFromIndex(ViewModel.SelectedIndex)
             is ListBoxItem container)
         {

@@ -67,6 +67,44 @@ public partial class MainWindow : Window
         {
             SelectionCountText.Text = count > 1 ? $"{count} selected" : "";
         };
+
+        RestoreWindowBounds();
+    }
+
+    private void RestoreWindowBounds()
+    {
+        var settings = _vm.Settings;
+
+        Width = settings.WindowWidth;
+        Height = settings.WindowHeight;
+
+        var left = settings.WindowLeft;
+        var top = settings.WindowTop;
+
+        if (!double.IsNaN(left) && !double.IsNaN(top))
+        {
+            if (IsRectVisibleOnAnyScreen(new Rect(left, top, Width, Height)))
+            {
+                WindowStartupLocation = WindowStartupLocation.Manual;
+                Left = left;
+                Top = top;
+            }
+        }
+
+        if (settings.WindowState == (int)System.Windows.WindowState.Maximized)
+            WindowState = System.Windows.WindowState.Maximized;
+    }
+
+    private static bool IsRectVisibleOnAnyScreen(Rect rect)
+    {
+        var virtualScreen = new Rect(
+            SystemParameters.VirtualScreenLeft,
+            SystemParameters.VirtualScreenTop,
+            SystemParameters.VirtualScreenWidth,
+            SystemParameters.VirtualScreenHeight);
+
+        rect.Intersect(virtualScreen);
+        return rect.Width > 50 && rect.Height > 50;
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -137,7 +175,27 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object sender, CancelEventArgs e)
     {
+        SaveWindowBounds();
         _vm.Dispose();
+    }
+
+    private void SaveWindowBounds()
+    {
+        var bounds = WindowState == WindowState.Normal
+            ? new Rect(Left, Top, Width, Height)
+            : RestoreBounds;
+
+        if (bounds != Rect.Empty)
+        {
+            _vm.Settings.WindowLeft = bounds.Left;
+            _vm.Settings.WindowTop = bounds.Top;
+            _vm.Settings.WindowWidth = bounds.Width;
+            _vm.Settings.WindowHeight = bounds.Height;
+        }
+
+        _vm.Settings.WindowState = WindowState == WindowState.Minimized
+            ? (int)System.Windows.WindowState.Normal
+            : (int)WindowState;
     }
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)

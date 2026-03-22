@@ -137,6 +137,65 @@ public partial class GalleryView : UserControl
         }
     }
 
+    private void GalleryListBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (ViewModel is null || ViewModel.SortedImages.Count == 0) return;
+
+        switch (e.Key)
+        {
+            case Key.Home:
+            {
+                ViewModel.SelectedIndex = 0;
+                ViewModel.SelectedItem = ViewModel.SortedImages[0];
+                e.Handled = true;
+                break;
+            }
+            case Key.End:
+            {
+                int last = ViewModel.SortedImages.Count - 1;
+                ViewModel.SelectedIndex = last;
+                ViewModel.SelectedItem = ViewModel.SortedImages[last];
+                e.Handled = true;
+                break;
+            }
+            case Key.PageDown:
+            {
+                int pageSize = EstimatePageSize();
+                int current = Math.Max(0, ViewModel.SelectedIndex);
+                int target = Math.Min(current + pageSize, ViewModel.SortedImages.Count - 1);
+                ViewModel.SelectedIndex = target;
+                ViewModel.SelectedItem = ViewModel.SortedImages[target];
+                e.Handled = true;
+                break;
+            }
+            case Key.PageUp:
+            {
+                int pageSize = EstimatePageSize();
+                int current = ViewModel.SelectedIndex < 0
+                    ? ViewModel.SortedImages.Count - 1
+                    : ViewModel.SelectedIndex;
+                int target = Math.Max(current - pageSize, 0);
+                ViewModel.SelectedIndex = target;
+                ViewModel.SelectedItem = ViewModel.SortedImages[target];
+                e.Handled = true;
+                break;
+            }
+        }
+    }
+
+    private int EstimatePageSize()
+    {
+        var scrollViewer = FindScrollViewer(GalleryListBox);
+        if (scrollViewer is null || ViewModel is null) return 10;
+
+        double itemSize = ViewModel.ThumbnailSize + 24;
+        if (itemSize <= 0) return 10;
+
+        int cols = Math.Max(1, (int)(scrollViewer.ViewportWidth / itemSize));
+        int rows = Math.Max(1, (int)(scrollViewer.ViewportHeight / itemSize));
+        return cols * rows;
+    }
+
     private void GalleryListBox_KeyDown(object sender, KeyEventArgs e)
     {
         if (ViewModel is null) return;
@@ -196,16 +255,6 @@ public partial class GalleryView : UserControl
 
             case Key.Q:
                 ViewModel.ToggleTagCommand.Execute(null);
-                e.Handled = true;
-                break;
-
-            case Key.Home:
-                ViewModel.GetFirstImage();
-                e.Handled = true;
-                break;
-
-            case Key.End:
-                ViewModel.GetLastImage();
                 e.Handled = true;
                 break;
 

@@ -69,6 +69,7 @@
              HorizontalContentAlignment="Center"
              VerticalContentAlignment="Top"
              KeyboardNavigation.DirectionalNavigation="Contained"
+             PreviewKeyDown="GalleryListBox_PreviewKeyDown"
              KeyDown="GalleryListBox_KeyDown"
              MouseDoubleClick="GalleryListBox_MouseDoubleClick">
 

@@ -1109,6 +1109,7 @@ public partial class FullscreenViewer : Window
 
     private void DeleteCurrentImage()
     {
+        if (!_vm.Settings.FileOperationsEnabled) return;
         var item = _vm.SelectedItem;
         if (item is null || item.IsFolder) return;
 

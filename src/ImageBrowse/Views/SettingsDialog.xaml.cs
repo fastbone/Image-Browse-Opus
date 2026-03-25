@@ -104,6 +104,7 @@ public partial class SettingsDialog : Window
         BossModeCheck.IsChecked = vm.Settings.BossModeEnabled;
         AutoUpdateCheck.IsChecked = vm.Settings.CheckForUpdatesOnStartup;
         EnableAnimationsCheck.IsChecked = vm.Settings.EnableAnimations;
+        FileOperationsCheck.IsChecked = vm.Settings.FileOperationsEnabled;
 
         if (vm.IsDarkTheme)
             DarkRadio.IsChecked = true;
@@ -289,6 +290,7 @@ public partial class SettingsDialog : Window
         _vm.Settings.BossModeEnabled = BossModeCheck.IsChecked == true;
         _vm.Settings.EnableAnimations = EnableAnimationsCheck.IsChecked == true;
         _vm.Settings.CheckForUpdatesOnStartup = AutoUpdateCheck.IsChecked == true;
+        _vm.Settings.FileOperationsEnabled = FileOperationsCheck.IsChecked == true;
 
         bool isDark = DarkRadio.IsChecked == true;
         _vm.IsDarkTheme = isDark;

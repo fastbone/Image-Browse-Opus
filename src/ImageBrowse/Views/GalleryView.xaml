@@ -71,7 +71,8 @@
              KeyboardNavigation.DirectionalNavigation="Contained"
              PreviewKeyDown="GalleryListBox_PreviewKeyDown"
              KeyDown="GalleryListBox_KeyDown"
-             MouseDoubleClick="GalleryListBox_MouseDoubleClick">
+             MouseDoubleClick="GalleryListBox_MouseDoubleClick"
+             PreviewMouseRightButtonUp="GalleryListBox_PreviewMouseRightButtonUp">
 
         <ListBox.ItemsPanel>
             <ItemsPanelTemplate>

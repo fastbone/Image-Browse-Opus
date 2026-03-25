@@ -702,6 +702,83 @@ public partial class MainViewModel : ObservableObject, IDisposable
         UpdateStatusCount();
     }
 
+    public event Action? FolderTreeRefreshRequested;
+
+    public void RenameItem(ImageItem item, string newName)
+    {
+        string oldPath = item.FilePath;
+        string? parentDir = Path.GetDirectoryName(oldPath);
+        if (parentDir is null) return;
+
+        string newPath = Path.Combine(parentDir, newName);
+
+        _db.DeleteThumbnail(oldPath);
+
+        var newItem = new ImageItem
+        {
+            FilePath = newPath,
+            FileName = newName,
+            Extension = item.IsFolder ? "" : Path.GetExtension(newName).ToUpperInvariant().TrimStart('.'),
+            FileSize = item.FileSize,
+            DateModified = item.DateModified,
+            DateCreated = item.DateCreated,
+            IsFolder = item.IsFolder,
+            IsParentFolder = item.IsParentFolder,
+            IsVideo = item.IsVideo,
+            FolderSubfolderCount = item.FolderSubfolderCount,
+            FolderImageCount = item.FolderImageCount,
+            ImageWidth = item.ImageWidth,
+            ImageHeight = item.ImageHeight,
+            DateTaken = item.DateTaken,
+            CameraModel = item.CameraModel,
+            CameraManufacturer = item.CameraManufacturer,
+            LensModel = item.LensModel,
+            Iso = item.Iso,
+            FNumber = item.FNumber,
+            ExposureTime = item.ExposureTime,
+            FocalLength = item.FocalLength,
+            MetadataLoaded = item.MetadataLoaded,
+            Duration = item.Duration,
+            Rating = item.Rating,
+            IsTagged = item.IsTagged,
+            Thumbnail = item.Thumbnail,
+        };
+
+        int allIdx = _allImages.IndexOf(item);
+        if (allIdx >= 0)
+            _allImages[allIdx] = newItem;
+
+        ApplySortAndPopulate();
+
+        var inSorted = SortedImages.FirstOrDefault(i => i.FilePath == newPath);
+        if (inSorted is not null)
+        {
+            SelectedIndex = SortedImages.IndexOf(inSorted);
+            SelectedItem = inSorted;
+        }
+
+        if (item.IsFolder)
+            FolderTreeRefreshRequested?.Invoke();
+    }
+
+    public void OnItemsMoved(IList<ImageItem> items)
+    {
+        foreach (var item in items)
+        {
+            _db.DeleteThumbnail(item.FilePath);
+            _allImages.Remove(item);
+            SortedImages.Remove(item);
+        }
+        UpdateStatusCount();
+        FolderTreeRefreshRequested?.Invoke();
+    }
+
+    public void RefreshCurrentFolder()
+    {
+        if (!string.IsNullOrEmpty(CurrentPath))
+            _ = NavigateToFolder(CurrentPath);
+    }
+
     private void UpdateStatusCount()
     {
         int imageCount = _allImages.Count(i => !i.IsFolder && !i.IsVideo);

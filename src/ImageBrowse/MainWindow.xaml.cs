@@ -3,6 +3,7 @@ using ImageBrowse.Services;
 using ImageBrowse.ViewModels;
 using ImageBrowse.Views;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -64,6 +65,12 @@ public partial class MainWindow : Window
         _startupPath = startupPath;
 
         _vm.PropertyChanged += ViewModel_PropertyChanged;
+        _vm.FolderTreeRefreshRequested += () =>
+        {
+            PopulateDriveTree();
+            if (!string.IsNullOrEmpty(_vm.CurrentPath))
+                SyncFolderTree(_vm.CurrentPath);
+        };
         Gallery.SelectionCountChanged += count =>
         {
             SelectionCountText.Text = count > 1 ? $"{count} selected" : "";
@@ -549,11 +556,17 @@ public partial class MainWindow : Window
         {
             Header = CreateTreeHeader(icon, displayName ?? dir.Name),
             Tag = dir.FullName,
-            FontSize = 13
+            FontSize = 13,
+            AllowDrop = true,
         };
 
         item.Items.Add(new TreeViewItem { Header = "Loading..." });
         item.Expanded += TreeItem_Expanded;
+        item.DragEnter += TreeItem_DragEnter;
+        item.DragOver += TreeItem_DragOver;
+        item.DragLeave += TreeItem_DragLeave;
+        item.Drop += TreeItem_Drop;
+        item.MouseRightButtonUp += TreeItem_MouseRightButtonUp;
 
         return item;
     }
@@ -849,6 +862,11 @@ public partial class MainWindow : Window
                 OpenAboutDialog();
                 e.Handled = true;
                 break;
+
+            case Key.F2 when FolderTree.IsKeyboardFocusWithin:
+                BeginTreeRename();
+                e.Handled = true;
+                break;
         }
     }
 
@@ -1060,4 +1078,320 @@ public partial class MainWindow : Window
     {
         OpenAboutDialog();
     }
+
+    #region Folder Tree Context Menu
+
+    private void TreeItem_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not TreeViewItem treeItem) return;
+        treeItem.IsSelected = true;
+        e.Handled = true;
+
+        string? path = treeItem.Tag as string;
+        if (path is null) return;
+
+        bool opsEnabled = _vm.Settings.FileOperationsEnabled;
+        var menu = new ContextMenu();
+
+        if (opsEnabled)
+        {
+            var renameItem = new MenuItem { Header = "Rename", InputGestureText = "F2" };
+            renameItem.Click += (_, _) => BeginTreeRename(treeItem);
+            menu.Items.Add(renameItem);
+
+            var newFolderItem = new MenuItem { Header = "New Folder" };
+            newFolderItem.Click += (_, _) => CreateNewFolderInTree(treeItem);
+            menu.Items.Add(newFolderItem);
+
+            menu.Items.Add(new Separator());
+
+            var deleteItem = new MenuItem { Header = "Delete" };
+            deleteItem.Click += (_, _) => DeleteTreeFolder(treeItem);
+            menu.Items.Add(deleteItem);
+
+            menu.Items.Add(new Separator());
+        }
+
+        var explorerItem = new MenuItem { Header = "Open in Explorer" };
+        explorerItem.Click += (_, _) => Process.Start("explorer.exe", $"\"{path}\"");
+        menu.Items.Add(explorerItem);
+
+        treeItem.ContextMenu = menu;
+        menu.IsOpen = true;
+    }
+
+    private void DeleteTreeFolder(TreeViewItem treeItem)
+    {
+        if (!_vm.Settings.FileOperationsEnabled) return;
+        string? path = treeItem.Tag as string;
+        if (path is null) return;
+
+        string name = Path.GetFileName(path);
+        if (_vm.Settings.ConfirmBeforeDelete)
+        {
+            var result = MessageBox.Show(this,
+                $"Move folder \"{name}\" and all its contents to the Recycle Bin?",
+                "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result != MessageBoxResult.Yes) return;
+        }
+
+        if (FileOperationService.MoveToRecycleBin(path))
+        {
+            if (treeItem.Parent is TreeViewItem parentItem)
+            {
+                parentItem.Items.Remove(treeItem);
+            }
+            else if (treeItem.Parent is TreeView tree)
+            {
+                tree.Items.Remove(treeItem);
+            }
+
+            if (string.Equals(_vm.CurrentPath, path, StringComparison.OrdinalIgnoreCase))
+            {
+                var parent = Directory.GetParent(path);
+                if (parent is not null)
+                    _ = NavigateToPath(parent.FullName);
+            }
+            else
+            {
+                _vm.RefreshCurrentFolder();
+            }
+        }
+        else
+        {
+            MessageBox.Show(this, $"Failed to delete \"{name}\".",
+                "Delete Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void CreateNewFolderInTree(TreeViewItem treeItem)
+    {
+        if (!_vm.Settings.FileOperationsEnabled) return;
+        string? parentPath = treeItem.Tag as string;
+        if (parentPath is null) return;
+
+        string newPath = FileOperationService.GetNewFolderPath(parentPath);
+        string folderName = Path.GetFileName(newPath);
+
+        if (!FileOperationService.CreateFolder(parentPath, folderName))
+        {
+            MessageBox.Show(this, "Failed to create new folder.",
+                "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        treeItem.IsExpanded = true;
+        var dirInfo = new DirectoryInfo(newPath);
+        var newItem = CreateTreeItem(dirInfo);
+        treeItem.Items.Add(newItem);
+        newItem.IsSelected = true;
+
+        _vm.RefreshCurrentFolder();
+
+        Dispatcher.BeginInvoke(DispatcherPriority.Input, () => BeginTreeRename(newItem));
+    }
+
+    #endregion
+
+    #region Folder Tree Inline Rename
+
+    private TextBox? _treeRenameBox;
+
+    private void BeginTreeRename(TreeViewItem? treeItem = null)
+    {
+        if (!_vm.Settings.FileOperationsEnabled) return;
+
+        treeItem ??= FolderTree.SelectedItem as TreeViewItem;
+        if (treeItem is null) return;
+
+        string? path = treeItem.Tag as string;
+        if (path is null) return;
+
+        CancelTreeRename();
+
+        var headerPanel = treeItem.Header as StackPanel;
+        if (headerPanel is null) return;
+
+        TextBlock? label = null;
+        foreach (var child in headerPanel.Children)
+        {
+            if (child is TextBlock tb)
+            {
+                label = tb;
+                break;
+            }
+        }
+        if (label is null) return;
+
+        label.Visibility = Visibility.Collapsed;
+
+        _treeRenameBox = new TextBox
+        {
+            Text = Path.GetFileName(path),
+            FontSize = 13,
+            MinWidth = 100,
+            Padding = new Thickness(2, 0, 2, 0),
+            Tag = (treeItem, label, path),
+        };
+
+        _treeRenameBox.SelectAll();
+        headerPanel.Children.Add(_treeRenameBox);
+        _treeRenameBox.Focus();
+
+        _treeRenameBox.KeyDown += TreeRenameBox_KeyDown;
+        _treeRenameBox.LostFocus += TreeRenameBox_LostFocus;
+    }
+
+    private void TreeRenameBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            CommitTreeRename();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            CancelTreeRename();
+            e.Handled = true;
+        }
+    }
+
+    private void TreeRenameBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        CommitTreeRename();
+    }
+
+    private void CommitTreeRename()
+    {
+        if (_treeRenameBox is null) return;
+        var box = _treeRenameBox;
+        _treeRenameBox = null;
+
+        box.KeyDown -= TreeRenameBox_KeyDown;
+        box.LostFocus -= TreeRenameBox_LostFocus;
+
+        if (box.Tag is not (TreeViewItem treeItem, TextBlock label, string oldPath)) return;
+
+        string newName = box.Text.Trim();
+
+        var parent = box.Parent as StackPanel;
+        parent?.Children.Remove(box);
+        label.Visibility = Visibility.Visible;
+
+        if (string.IsNullOrEmpty(newName) || newName == Path.GetFileName(oldPath)) return;
+
+        var (success, error) = FileOperationService.Rename(oldPath, newName);
+        if (success)
+        {
+            string? parentDir = Path.GetDirectoryName(oldPath);
+            string newPath = parentDir is not null ? Path.Combine(parentDir, newName) : newName;
+
+            label.Text = newName;
+            treeItem.Tag = newPath;
+
+            if (string.Equals(_vm.CurrentPath, oldPath, StringComparison.OrdinalIgnoreCase))
+                _ = NavigateToPath(newPath);
+            else
+                _vm.RefreshCurrentFolder();
+        }
+        else
+        {
+            MessageBox.Show(this, $"Could not rename: {error}",
+                "Rename Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void CancelTreeRename()
+    {
+        if (_treeRenameBox is null) return;
+        var box = _treeRenameBox;
+        _treeRenameBox = null;
+
+        box.KeyDown -= TreeRenameBox_KeyDown;
+        box.LostFocus -= TreeRenameBox_LostFocus;
+
+        if (box.Tag is (TreeViewItem _, TextBlock label, string _))
+            label.Visibility = Visibility.Visible;
+
+        var parent = box.Parent as StackPanel;
+        parent?.Children.Remove(box);
+    }
+
+    #endregion
+
+    #region Folder Tree Drag and Drop
+
+    private void TreeItem_DragEnter(object sender, DragEventArgs e)
+    {
+        TreeItem_DragOver(sender, e);
+    }
+
+    private void TreeItem_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = DragDropEffects.None;
+
+        if (!_vm.Settings.FileOperationsEnabled) return;
+        if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+        if (sender is not TreeViewItem treeItem || treeItem.Tag is not string targetPath) return;
+
+        var files = e.Data.GetData(DataFormats.FileDrop) as string[];
+        if (files is null || files.Length == 0) return;
+
+        bool anySourceIsTarget = files.Any(f =>
+            string.Equals(Path.GetDirectoryName(f), targetPath, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(f, targetPath, StringComparison.OrdinalIgnoreCase));
+        if (anySourceIsTarget)
+        {
+            e.Effects = DragDropEffects.None;
+            e.Handled = true;
+            return;
+        }
+
+        bool ctrlHeld = (e.KeyStates & DragDropKeyStates.ControlKey) != 0;
+        e.Effects = ctrlHeld ? DragDropEffects.Copy : DragDropEffects.Move;
+
+        treeItem.Background = (Brush)FindResource("BgHoverBrush");
+        e.Handled = true;
+    }
+
+    private void TreeItem_DragLeave(object sender, DragEventArgs e)
+    {
+        if (sender is TreeViewItem treeItem)
+            treeItem.Background = Brushes.Transparent;
+    }
+
+    private void TreeItem_Drop(object sender, DragEventArgs e)
+    {
+        if (sender is TreeViewItem treeItem)
+            treeItem.Background = Brushes.Transparent;
+
+        if (!_vm.Settings.FileOperationsEnabled) return;
+        if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+        if (sender is not TreeViewItem dropTarget || dropTarget.Tag is not string targetPath) return;
+
+        var files = e.Data.GetData(DataFormats.FileDrop) as string[];
+        if (files is null || files.Length == 0) return;
+
+        bool ctrlHeld = (e.KeyStates & DragDropKeyStates.ControlKey) != 0;
+        var hwnd = new WindowInteropHelper(this).Handle;
+
+        bool success;
+        if (ctrlHeld)
+            success = FileOperationService.CopyItems(files, targetPath, hwnd);
+        else
+            success = FileOperationService.MoveItems(files, targetPath, hwnd);
+
+        if (success && !ctrlHeld)
+        {
+            var movedItems = e.Data.GetData("ImageBrowseItems") as IList<ImageItem>;
+            if (movedItems is not null)
+                _vm.OnItemsMoved(movedItems);
+            else
+                _vm.RefreshCurrentFolder();
+        }
+
+        e.Handled = true;
+    }
+
+    #endregion
 }

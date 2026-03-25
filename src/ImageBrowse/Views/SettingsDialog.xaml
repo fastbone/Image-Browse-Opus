@@ -114,6 +114,20 @@
                     </StackPanel>
                 </Border>
 
+                <!-- File Operations card -->
+                <Border Background="{DynamicResource BgSurfaceBrush}" CornerRadius="8"
+                        Padding="16" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="File Operations" FontWeight="SemiBold" FontSize="13"
+                                   Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,4" />
+                        <TextBlock Text="Controls whether the app can rename, delete, move, and copy files and folders."
+                                   Foreground="{DynamicResource FgMutedBrush}" FontSize="11" Margin="0,0,0,8"
+                                   TextWrapping="Wrap" />
+                        <CheckBox x:Name="FileOperationsCheck" Content="Enable file and folder operations"
+                                  Foreground="{DynamicResource FgPrimaryBrush}" FontSize="13" />
+                    </StackPanel>
+                </Border>
+
                 <!-- Shell Integration card -->
                 <Border Background="{DynamicResource BgSurfaceBrush}" CornerRadius="8"
                         Padding="16" Margin="0,0,0,12">

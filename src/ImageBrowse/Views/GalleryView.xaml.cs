@@ -1,11 +1,13 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using ImageBrowse.Models;
 using ImageBrowse.Services;
 using ImageBrowse.ViewModels;
 
@@ -20,6 +22,10 @@ public partial class GalleryView : UserControl
         EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
     };
 
+    private Point _dragStartPoint;
+    private bool _isDragPending;
+    private TextBox? _renameBox;
+
     public GalleryView()
     {
         InitializeComponent();
@@ -30,6 +36,9 @@ public partial class GalleryView : UserControl
             SelectionCountChanged?.Invoke(count);
         };
         GalleryListBox.ItemContainerGenerator.StatusChanged += OnContainerStatusChanged;
+        GalleryListBox.PreviewMouseLeftButtonDown += GalleryListBox_PreviewMouseLeftButtonDown;
+        GalleryListBox.PreviewMouseMove += GalleryListBox_PreviewMouseMove;
+        GalleryListBox.PreviewMouseLeftButtonUp += (_, _) => _isDragPending = false;
         DataContextChanged += (_, _) =>
         {
             if (ViewModel is not null)
@@ -262,6 +271,11 @@ public partial class GalleryView : UserControl
                 DeleteSelectedImages();
                 e.Handled = true;
                 break;
+
+            case Key.F2:
+                BeginRename();
+                e.Handled = true;
+                break;
         }
     }
 
@@ -314,16 +328,31 @@ public partial class GalleryView : UserControl
 
     private void DeleteSelectedImages()
     {
-        if (ViewModel is null) return;
+        if (ViewModel is null || !ViewModel.Settings.FileOperationsEnabled) return;
         var items = GalleryListBox.SelectedItems.Cast<Models.ImageItem>()
-            .Where(i => !i.IsFolder).ToList();
+            .Where(i => !i.IsParentFolder).ToList();
         if (items.Count == 0) return;
+
+        bool hasFolders = items.Any(i => i.IsFolder);
 
         if (ViewModel.Settings.ConfirmBeforeDelete)
         {
-            string msg = items.Count == 1
-                ? $"Move \"{items[0].FileName}\" to the Recycle Bin?"
-                : $"Move {items.Count} files to the Recycle Bin?";
+            string msg;
+            if (items.Count == 1)
+            {
+                msg = items[0].IsFolder
+                    ? $"Move folder \"{items[0].FileName}\" and all its contents to the Recycle Bin?"
+                    : $"Move \"{items[0].FileName}\" to the Recycle Bin?";
+            }
+            else
+            {
+                int folderCount = items.Count(i => i.IsFolder);
+                int fileCount = items.Count - folderCount;
+                var parts = new List<string>();
+                if (fileCount > 0) parts.Add($"{fileCount} file{(fileCount != 1 ? "s" : "")}");
+                if (folderCount > 0) parts.Add($"{folderCount} folder{(folderCount != 1 ? "s" : "")}");
+                msg = $"Move {string.Join(" and ", parts)} to the Recycle Bin?";
+            }
 
             var result = MessageBox.Show(Window.GetWindow(this),
                 msg + "\n\nYou can disable this confirmation in Settings.",
@@ -342,7 +371,11 @@ public partial class GalleryView : UserControl
 
         if (deleted.Count > 0)
         {
-            ViewModel.RemoveImages(deleted);
+            bool deletedFolders = deleted.Any(i => i.IsFolder);
+            if (deletedFolders)
+                ViewModel.OnItemsMoved(deleted);
+            else
+                ViewModel.RemoveImages(deleted);
 
             if (ViewModel.SortedImages.Count > 0)
             {
@@ -360,5 +393,282 @@ public partial class GalleryView : UserControl
         var parent = System.IO.Directory.GetParent(ViewModel.CurrentPath);
         if (parent is not null)
             _ = ViewModel.NavigateToFolder(parent.FullName, folderName);
+    }
+
+    public ContextMenu BuildGalleryContextMenu()
+    {
+        bool opsEnabled = ViewModel?.Settings.FileOperationsEnabled == true;
+        var menu = new ContextMenu();
+
+        var openItem = new MenuItem { Header = "Open", InputGestureText = "Enter" };
+        openItem.Click += (_, _) =>
+        {
+            if (ViewModel?.SelectedItem is null) return;
+            if (ViewModel.SelectedItem.IsFolder)
+            {
+                string? returnTo = ViewModel.SelectedItem.IsParentFolder
+                    ? Path.GetFileName(ViewModel.CurrentPath) : null;
+                _ = ViewModel.NavigateToFolder(ViewModel.SelectedItem.FilePath, returnTo);
+            }
+            else
+                ViewModel.EnterFullscreen();
+        };
+        menu.Items.Add(openItem);
+
+        menu.Items.Add(new Separator());
+
+        if (opsEnabled)
+        {
+            var renameItem = new MenuItem { Header = "Rename", InputGestureText = "F2" };
+            renameItem.Click += (_, _) => BeginRename();
+            menu.Items.Add(renameItem);
+
+            var moveToItem = new MenuItem { Header = "Move to..." };
+            moveToItem.Click += (_, _) => MoveSelectedTo();
+            menu.Items.Add(moveToItem);
+
+            var copyToItem = new MenuItem { Header = "Copy to..." };
+            copyToItem.Click += (_, _) => CopySelectedTo();
+            menu.Items.Add(copyToItem);
+
+            menu.Items.Add(new Separator());
+
+            var deleteItem = new MenuItem { Header = "Delete", InputGestureText = "Del" };
+            deleteItem.Click += (_, _) => DeleteSelectedImages();
+            menu.Items.Add(deleteItem);
+
+            menu.Items.Add(new Separator());
+        }
+
+        var explorerItem = new MenuItem { Header = "Open in Explorer" };
+        explorerItem.Click += (_, _) => OpenInExplorer();
+        menu.Items.Add(explorerItem);
+
+        return menu;
+    }
+
+    private void GalleryListBox_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (ViewModel is null) return;
+        GalleryListBox.ContextMenu = BuildGalleryContextMenu();
+    }
+
+    private void BeginRename()
+    {
+        if (ViewModel is null || !ViewModel.Settings.FileOperationsEnabled) return;
+        var item = ViewModel.SelectedItem;
+        if (item is null || item.IsParentFolder) return;
+
+        var container = GalleryListBox.ItemContainerGenerator.ContainerFromItem(item) as ListBoxItem;
+        if (container is null) return;
+
+        var fileNameBlock = FindVisualChild<TextBlock>(container, tb =>
+            tb.Text == item.FileName && tb.FontSize == 11);
+        if (fileNameBlock is null) return;
+
+        CancelRename();
+
+        var parent = VisualTreeHelper.GetParent(fileNameBlock) as Panel;
+        if (parent is null) return;
+
+        fileNameBlock.Visibility = Visibility.Hidden;
+
+        string editName = item.IsFolder
+            ? item.FileName
+            : Path.GetFileNameWithoutExtension(item.FileName);
+        string ext = item.IsFolder ? "" : Path.GetExtension(item.FileName);
+
+        _renameBox = new TextBox
+        {
+            Text = item.FileName,
+            FontSize = 11,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            TextAlignment = TextAlignment.Center,
+            MinWidth = 60,
+            MaxWidth = ViewModel.ThumbnailSize,
+            Padding = new Thickness(2, 0, 2, 0),
+            Tag = (item, fileNameBlock),
+        };
+
+        int row = Grid.GetRow(fileNameBlock);
+        Grid.SetRow(_renameBox, row);
+        if (parent is Grid grid)
+            grid.Children.Add(_renameBox);
+
+        _renameBox.Focus();
+        if (!item.IsFolder && ext.Length > 0)
+        {
+            _renameBox.SelectionStart = 0;
+            _renameBox.SelectionLength = item.FileName.Length - ext.Length;
+        }
+        else
+        {
+            _renameBox.SelectAll();
+        }
+
+        _renameBox.KeyDown += RenameBox_KeyDown;
+        _renameBox.LostFocus += RenameBox_LostFocus;
+    }
+
+    private void RenameBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            CommitRename();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            CancelRename();
+            e.Handled = true;
+        }
+    }
+
+    private void RenameBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        CommitRename();
+    }
+
+    private void CommitRename()
+    {
+        if (_renameBox is null || ViewModel is null) return;
+
+        var box = _renameBox;
+        _renameBox = null;
+
+        box.KeyDown -= RenameBox_KeyDown;
+        box.LostFocus -= RenameBox_LostFocus;
+
+        if (box.Tag is not (ImageItem item, TextBlock fileNameBlock)) return;
+
+        string newName = box.Text.Trim();
+        var parent = VisualTreeHelper.GetParent(box) as Panel;
+        if (parent is Grid grid)
+            grid.Children.Remove(box);
+        fileNameBlock.Visibility = Visibility.Visible;
+
+        if (string.IsNullOrEmpty(newName) || newName == item.FileName) return;
+
+        var (success, error) = FileOperationService.Rename(item.FilePath, newName);
+        if (success)
+        {
+            ViewModel.RenameItem(item, newName);
+        }
+        else
+        {
+            MessageBox.Show(Window.GetWindow(this),
+                $"Could not rename: {error}",
+                "Rename Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void CancelRename()
+    {
+        if (_renameBox is null) return;
+        var box = _renameBox;
+        _renameBox = null;
+
+        box.KeyDown -= RenameBox_KeyDown;
+        box.LostFocus -= RenameBox_LostFocus;
+
+        if (box.Tag is (ImageItem _, TextBlock fileNameBlock))
+            fileNameBlock.Visibility = Visibility.Visible;
+
+        var parent = VisualTreeHelper.GetParent(box) as Panel;
+        if (parent is Grid grid)
+            grid.Children.Remove(box);
+    }
+
+    private void MoveSelectedTo()
+    {
+        if (ViewModel is null || !ViewModel.Settings.FileOperationsEnabled) return;
+        var items = GalleryListBox.SelectedItems.Cast<ImageItem>()
+            .Where(i => !i.IsParentFolder).ToList();
+        if (items.Count == 0) return;
+
+        var dialog = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "Move to...",
+            InitialDirectory = ViewModel.CurrentPath
+        };
+        if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
+
+        var hwnd = new System.Windows.Interop.WindowInteropHelper(Window.GetWindow(this)).Handle;
+        var sources = items.Select(i => i.FilePath).ToArray();
+        if (FileOperationService.MoveItems(sources, dialog.FolderName, hwnd))
+            ViewModel.OnItemsMoved(items);
+    }
+
+    private void CopySelectedTo()
+    {
+        if (ViewModel is null || !ViewModel.Settings.FileOperationsEnabled) return;
+        var items = GalleryListBox.SelectedItems.Cast<ImageItem>()
+            .Where(i => !i.IsParentFolder).ToList();
+        if (items.Count == 0) return;
+
+        var dialog = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "Copy to...",
+            InitialDirectory = ViewModel.CurrentPath
+        };
+        if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
+
+        var hwnd = new System.Windows.Interop.WindowInteropHelper(Window.GetWindow(this)).Handle;
+        var sources = items.Select(i => i.FilePath).ToArray();
+        FileOperationService.CopyItems(sources, dialog.FolderName, hwnd);
+    }
+
+    private void OpenInExplorer()
+    {
+        if (ViewModel?.SelectedItem is null) return;
+        string path = ViewModel.SelectedItem.FilePath;
+        if (ViewModel.SelectedItem.IsFolder)
+            Process.Start("explorer.exe", $"\"{path}\"");
+        else
+            Process.Start("explorer.exe", $"/select,\"{path}\"");
+    }
+
+    private void GalleryListBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _dragStartPoint = e.GetPosition(null);
+        _isDragPending = true;
+    }
+
+    private void GalleryListBox_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isDragPending || e.LeftButton != MouseButtonState.Pressed) return;
+        if (ViewModel is null || !ViewModel.Settings.FileOperationsEnabled) return;
+
+        Point pos = e.GetPosition(null);
+        Vector diff = _dragStartPoint - pos;
+
+        if (Math.Abs(diff.X) < SystemParameters.MinimumHorizontalDragDistance &&
+            Math.Abs(diff.Y) < SystemParameters.MinimumVerticalDragDistance)
+            return;
+
+        _isDragPending = false;
+
+        var items = GalleryListBox.SelectedItems.Cast<ImageItem>()
+            .Where(i => !i.IsParentFolder).ToList();
+        if (items.Count == 0) return;
+
+        var paths = items.Select(i => i.FilePath).ToArray();
+        var data = new DataObject(DataFormats.FileDrop, paths);
+        data.SetData("ImageBrowseItems", items);
+
+        DragDrop.DoDragDrop(GalleryListBox, data, DragDropEffects.Move | DragDropEffects.Copy);
+    }
+
+    private static T? FindVisualChild<T>(DependencyObject parent, Func<T, bool>? predicate = null) where T : DependencyObject
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is T t && (predicate is null || predicate(t)))
+                return t;
+            var found = FindVisualChild(child, predicate);
+            if (found is not null) return found;
+        }
+        return null;
     }
 }

@@ -26,7 +26,7 @@
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.1" />
     <PackageReference Include="LibVLCSharp" Version="3.9.6" />
     <PackageReference Include="LibVLCSharp.WPF" Version="3.9.6" />
-    <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="14.11.0" />
+    <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="14.11.1" />
     <PackageReference Include="MetadataExtractor" Version="2.9.2" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.5" />
     <PackageReference Include="Velopack" Version="0.0.1298" />

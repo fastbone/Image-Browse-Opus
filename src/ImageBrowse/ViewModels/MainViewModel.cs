@@ -278,6 +278,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (_parentFolderItem is not null)
             sorted = new[] { _parentFolderItem }.Concat(sorted);
         SortedImages.ReplaceAll(sorted);
+
+        foreach (var item in SortedImages)
+            item.CurrentSortField = CurrentSortField;
     }
 
     private IEnumerable<ImageItem> ApplySort(IEnumerable<ImageItem> items)

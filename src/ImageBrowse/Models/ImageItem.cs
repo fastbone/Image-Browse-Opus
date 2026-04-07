@@ -20,7 +20,12 @@ public partial class ImageItem : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SubtitleDisplay))]
+    [NotifyPropertyChangedFor(nameof(SortSubtitleDisplay))]
     private int _folderImageCount;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SortSubtitleDisplay))]
+    private SortField _currentSortField = SortField.FileName;
 
     public DateTime? DateTaken { get; set; }
     public int ImageWidth { get; set; }
@@ -58,6 +63,29 @@ public partial class ImageItem : ObservableObject
             : IsVideo
                 ? FormatVideoSubtitle()
                 : $"{DimensionsDisplay}  {FileSizeDisplay}";
+
+    public string SortSubtitleDisplay => CurrentSortField switch
+    {
+        SortField.FileName => SubtitleDisplay,
+        SortField.Dimensions => SubtitleDisplay,
+        SortField.DateModified => IsParentFolder ? "Parent folder"
+            : $"Modified: {DateModified:yyyy-MM-dd HH:mm}",
+        SortField.DateCreated => IsParentFolder ? "Parent folder"
+            : $"Created: {DateCreated:yyyy-MM-dd HH:mm}",
+        SortField.DateTaken => IsParentFolder ? "Parent folder"
+            : IsFolder ? FormatFolderSubtitle()
+            : DateTaken.HasValue ? $"Taken: {DateTaken.Value:yyyy-MM-dd HH:mm}" : "Taken: \u2014",
+        SortField.FileSize => IsParentFolder ? "Parent folder"
+            : IsFolder ? FormatFolderSubtitle()
+            : $"Size: {FileSizeDisplay}",
+        SortField.FileType => IsParentFolder ? "Parent folder"
+            : IsFolder ? FormatFolderSubtitle()
+            : $"Type: {Extension}",
+        SortField.Rating => IsParentFolder ? "Parent folder"
+            : IsFolder ? FormatFolderSubtitle()
+            : Rating > 0 ? $"Rating: {new string('\u2605', Rating)}{new string('\u2606', 5 - Rating)}" : "Rating: \u2014",
+        _ => SubtitleDisplay
+    };
 
     private string FormatVideoSubtitle()
     {

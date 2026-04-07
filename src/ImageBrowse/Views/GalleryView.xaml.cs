@@ -189,6 +189,31 @@ public partial class GalleryView : UserControl
                 e.Handled = true;
                 break;
             }
+            case Key.Right:
+            {
+                int current = Math.Max(0, ViewModel.SelectedIndex);
+                int last = ViewModel.SortedImages.Count - 1;
+                if (current < last)
+                {
+                    ViewModel.SelectedIndex = current + 1;
+                    ViewModel.SelectedItem = ViewModel.SortedImages[current + 1];
+                    FocusSelectedItem();
+                    e.Handled = true;
+                }
+                break;
+            }
+            case Key.Left:
+            {
+                int current = ViewModel.SelectedIndex;
+                if (current > 0)
+                {
+                    ViewModel.SelectedIndex = current - 1;
+                    ViewModel.SelectedItem = ViewModel.SortedImages[current - 1];
+                    FocusSelectedItem();
+                    e.Handled = true;
+                }
+                break;
+            }
         }
     }
 

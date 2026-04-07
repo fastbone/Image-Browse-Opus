@@ -286,9 +286,9 @@
                                HorizontalAlignment="Center" Margin="0,4,0,0"
                                MaxWidth="{Binding DataContext.ThumbnailSize, ElementName=GalleryRoot}" />
 
-                    <!-- Subtitle: dimensions/size for images, image count for folders -->
+                    <!-- Subtitle: sort-relevant info for images, image count for folders -->
                     <TextBlock Grid.Row="2"
-                               Text="{Binding SubtitleDisplay, Mode=OneWay}"
+                               Text="{Binding SortSubtitleDisplay, Mode=OneWay}"
                                FontSize="10"
                                Foreground="{DynamicResource FgMutedBrush}"
                                HorizontalAlignment="Center" Margin="0,1,0,0"

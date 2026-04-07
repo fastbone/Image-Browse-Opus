@@ -3,12 +3,13 @@ using System.Collections.Frozen;
 using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using ImageBrowse.Services.Abstractions;
 using ImageMagick;
 using ImageMagick.Formats;
 
 namespace ImageBrowse.Services;
 
-public sealed class ThumbnailService : IDisposable
+public sealed class ThumbnailService : IThumbnailService
 {
     private readonly DatabaseService _db;
     private readonly Lazy<VideoThumbnailService> _videoThumbService = new(() => new VideoThumbnailService());
@@ -35,8 +36,8 @@ public sealed class ThumbnailService : IDisposable
         ".jpg", ".jpeg", ".jfif"
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
-    public event Action<string, BitmapSource, int, int>? ThumbnailReady;
-    public event Action<string, BitmapSource, int, int, TimeSpan>? VideoThumbnailReady;
+    public event Action<string, object, int, int>? ThumbnailReady;
+    public event Action<string, object, int, int, TimeSpan>? VideoThumbnailReady;
     public event Action<string>? ThumbnailFailed;
 
     public ThumbnailService(DatabaseService db)
@@ -46,7 +47,7 @@ public sealed class ThumbnailService : IDisposable
         _semaphore = new SemaphoreSlim(workerCount, workerCount);
     }
 
-    public BitmapSource? GetCachedThumbnail(string filePath, DateTime lastModified)
+    public object? GetCachedThumbnail(string filePath, DateTime lastModified)
     {
         var data = _db.GetThumbnail(filePath, lastModified);
         if (data is null) return null;
@@ -99,7 +100,7 @@ public sealed class ThumbnailService : IDisposable
     {
         try
         {
-            if (ImageLoadingService.IsVideoFile(filePath))
+            if (SupportedFormats.IsVideoFile(filePath))
             {
                 GenerateVideoThumbnail(filePath, lastModified, fileSize);
                 return;

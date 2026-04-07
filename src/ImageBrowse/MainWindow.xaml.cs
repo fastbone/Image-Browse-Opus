@@ -1,3 +1,4 @@
+using ImageBrowse.Helpers;
 using ImageBrowse.Models;
 using ImageBrowse.Services;
 using ImageBrowse.ViewModels;
@@ -60,7 +61,17 @@ public partial class MainWindow : Window
     public MainWindow(string? startupPath = null)
     {
         InitializeComponent();
-        _vm = new MainViewModel();
+
+        var db = new DatabaseService();
+        var settings = new SettingsService(db);
+        _vm = new MainViewModel(
+            db, settings,
+            new ThumbnailService(db),
+            new FolderThumbnailService(db),
+            new MetadataService(db),
+            new ImageLoadingService(),
+            new WpfDispatcherService(),
+            NaturalSortComparer.Instance);
         DataContext = _vm;
         _startupPath = startupPath;
 
@@ -146,7 +157,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (File.Exists(path) && ImageLoadingService.IsSupported(path))
+        if (File.Exists(path) && SupportedFormats.IsSupported(path))
         {
             var folder = Path.GetDirectoryName(path);
             if (folder is null) return;

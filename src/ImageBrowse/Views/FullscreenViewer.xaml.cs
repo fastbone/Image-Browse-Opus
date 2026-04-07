@@ -188,15 +188,15 @@ public partial class FullscreenViewer : Window
         System.Windows.Media.Imaging.BitmapSource? newImage = null;
 
         var cached = _prefetch.GetCached(_vm.SelectedIndex);
-        if (cached is not null)
+        if (cached is System.Windows.Media.Imaging.BitmapSource cachedBmp)
         {
-            newImage = cached;
+            newImage = cachedBmp;
         }
         else
         {
             var image = await _prefetch.GetOrLoadAsync(_vm.SelectedIndex);
             if (ct.IsCancellationRequested || seq != _loadSequence) return;
-            newImage = image;
+            newImage = image as System.Windows.Media.Imaging.BitmapSource;
         }
 
         bool animate = crossfade && _vm.Settings.EnableAnimations;
@@ -468,7 +468,7 @@ public partial class FullscreenViewer : Window
         _videoCropY = _videoPixelH / 4.0;
         ApplyVideoZoom(_videoZoomLevel);
 
-        VideoMiniMapImage.Source = _vm.SelectedItem?.Thumbnail;
+        VideoMiniMapImage.Source = _vm.SelectedItem?.Thumbnail as System.Windows.Media.ImageSource;
         VideoMiniMapPanel.Visibility = Visibility.Visible;
     }
 

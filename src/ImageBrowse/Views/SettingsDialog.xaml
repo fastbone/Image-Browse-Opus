@@ -1,7 +1,7 @@
 <Window x:Class="ImageBrowse.Views.SettingsDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:models="clr-namespace:ImageBrowse.Models"
+        xmlns:models="clr-namespace:ImageBrowse.Models;assembly=ImageBrowse.Core"
         Title="Settings"
         Width="560" Height="720"
         WindowStartupLocation="CenterOwner"

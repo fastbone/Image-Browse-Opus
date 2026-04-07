@@ -4,10 +4,11 @@ using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using ImageBrowse.Services.Abstractions;
 
 namespace ImageBrowse.Services;
 
-public sealed class FolderThumbnailService : IDisposable
+public sealed class FolderThumbnailService : IFolderThumbnailService
 {
     private readonly DatabaseService _db;
     private readonly ConcurrentDictionary<string, byte> _inProgress = new();
@@ -15,7 +16,7 @@ public sealed class FolderThumbnailService : IDisposable
     private CancellationTokenSource _cts = new();
     private const int CompositeSize = 256;
 
-    public event Action<string, BitmapSource>? FolderThumbnailReady;
+    public event Action<string, object>? FolderThumbnailReady;
 
     public FolderThumbnailService(DatabaseService db)
     {
@@ -23,7 +24,7 @@ public sealed class FolderThumbnailService : IDisposable
         _semaphore = new SemaphoreSlim(2, 2);
     }
 
-    public BitmapSource? GetCachedThumbnail(string folderPath, DateTime lastModified)
+    public object? GetCachedThumbnail(string folderPath, DateTime lastModified)
     {
         var data = _db.GetThumbnail(folderPath, lastModified);
         if (data is null) return null;
@@ -76,8 +77,8 @@ public sealed class FolderThumbnailService : IDisposable
     {
         try
         {
-            var imagePaths = ImageLoadingService.GetSupportedFiles(folderPath)
-                .Where(f => !ImageLoadingService.IsVideoFile(f)).Take(4).ToList();
+            var imagePaths = SupportedFormats.GetSupportedFiles(folderPath)
+                .Where(f => !SupportedFormats.IsVideoFile(f)).Take(4).ToList();
 
             BitmapSource? composite = imagePaths.Count switch
             {

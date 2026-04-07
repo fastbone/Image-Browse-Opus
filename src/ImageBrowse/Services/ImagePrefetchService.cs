@@ -1,12 +1,12 @@
 using System.Collections.Concurrent;
-using System.Windows.Media.Imaging;
+using ImageBrowse.Services.Abstractions;
 
 namespace ImageBrowse.Services;
 
 public sealed class ImagePrefetchService : IDisposable
 {
-    private readonly ImageLoadingService _loader;
-    private readonly ConcurrentDictionary<int, BitmapSource> _cache = new();
+    private readonly IImageLoadingService _loader;
+    private readonly ConcurrentDictionary<int, object> _cache = new();
     private readonly ConcurrentDictionary<int, CancellationTokenSource> _loading = new();
     private readonly SemaphoreSlim _semaphore = new(2, 2);
 
@@ -15,7 +15,7 @@ public sealed class ImagePrefetchService : IDisposable
 
     public int MaxPrefetch { get; set; } = 2;
 
-    public ImagePrefetchService(ImageLoadingService loader)
+    public ImagePrefetchService(IImageLoadingService loader)
     {
         _loader = loader;
     }
@@ -26,12 +26,12 @@ public sealed class ImagePrefetchService : IDisposable
         _indexResolver = indexResolver;
     }
 
-    public BitmapSource? GetCached(int index)
+    public object? GetCached(int index)
     {
         return _cache.TryGetValue(index, out var bmp) ? bmp : null;
     }
 
-    public async Task<BitmapSource?> GetOrLoadAsync(int index)
+    public async Task<object?> GetOrLoadAsync(int index)
     {
         if (_cache.TryGetValue(index, out var cached))
             return cached;

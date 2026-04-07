@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using System.Windows.Media.Imaging;
 
 namespace ImageBrowse.Models;
 
@@ -12,7 +11,7 @@ public partial class ImageItem : ObservableObject
     public required DateTime DateModified { get; set; }
     public required DateTime DateCreated { get; init; }
 
-    [ObservableProperty] private BitmapSource? _thumbnail;
+    [ObservableProperty] private object? _thumbnail;
     [ObservableProperty] private bool _isSelected;
     [ObservableProperty] private int _rating;
     [ObservableProperty] private bool _isTagged;

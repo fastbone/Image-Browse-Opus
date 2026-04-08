@@ -116,7 +116,7 @@ jobs:
           path: "*.dmg"
 
   build-macos-x64:
-    runs-on: macos-13
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -197,9 +197,15 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: stable
+          cache: false
 
       - name: Install nfpm
-        run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+        run: |
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Install ImageMagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
 
       - name: Extract version from tag
         id: version
@@ -215,7 +221,7 @@ jobs:
           /p:Version=${{ steps.version.outputs.version }}
 
       - name: Create app icon
-        run: magick src/ImageBrowse/Resources/app.ico[0] -resize 256x256 packaging/imagebrowse.png
+        run: convert 'src/ImageBrowse/Resources/app.ico[0]' -resize 256x256 packaging/imagebrowse.png
 
       - name: Create tar.gz
         run: >

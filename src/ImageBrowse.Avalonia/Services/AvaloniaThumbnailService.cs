@@ -30,7 +30,9 @@ public sealed class AvaloniaThumbnailService : IThumbnailService
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     public event Action<string, object, int, int>? ThumbnailReady;
+#pragma warning disable CS0067 // Video thumbnails not implemented on Avalonia yet; required by IThumbnailService (see WPF ThumbnailService.GenerateVideoThumbnail).
     public event Action<string, object, int, int, TimeSpan>? VideoThumbnailReady;
+#pragma warning restore CS0067
     public event Action<string>? ThumbnailFailed;
 
     public AvaloniaThumbnailService(DatabaseService db)

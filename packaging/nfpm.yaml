@@ -1,0 +1,17 @@
+name: imagebrowse
+arch: amd64
+version: "${VERSION}"
+maintainer: "fastbone"
+description: "A fast, cross-platform image browser"
+license: GPL-3.0-only
+homepage: "https://github.com/fastbone/Image-Browse-Opus"
+contents:
+  - src: ./publish/
+    dst: /opt/imagebrowse/
+  - src: ./packaging/imagebrowse.desktop
+    dst: /usr/share/applications/imagebrowse.desktop
+  - src: ./packaging/imagebrowse.png
+    dst: /usr/share/icons/hicolor/256x256/apps/imagebrowse.png
+  - dst: /usr/bin/imagebrowse
+    type: symlink
+    src: /opt/imagebrowse/ImageBrowse.Avalonia

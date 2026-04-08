@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Image Browse
+Exec=/opt/imagebrowse/ImageBrowse.Avalonia %F
+Icon=imagebrowse
+Type=Application
+Categories=Graphics;Viewer;
+MimeType=image/jpeg;image/png;image/webp;image/tiff;

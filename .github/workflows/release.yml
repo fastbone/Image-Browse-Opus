@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  build-windows:
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -30,7 +30,6 @@ jobs:
           SHORT_SHA="${GITHUB_SHA:0:7}"
           echo "version=$TAG" >> $GITHUB_OUTPUT
           echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
-          echo "Building version $TAG+$SHORT_SHA"
 
       - name: Publish application
         run: >
@@ -48,3 +47,213 @@ jobs:
           vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} || true
           vpk pack --packId ImageBrowse --packVersion ${{ steps.version.outputs.version }} --packDir publish --mainExe ImageBrowse.exe
           vpk upload github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} --publish --releaseName "Image Browse ${{ steps.version.outputs.version }}" --tag v${{ steps.version.outputs.version }}
+
+  build-macos-arm64:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install tools
+        run: |
+          brew install create-dmg
+          brew install imagemagick || true
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Publish application
+        run: >
+          dotnet publish src/ImageBrowse.Avalonia/ImageBrowse.Avalonia.csproj
+          -c Release
+          -o publish
+          -r osx-arm64
+          --self-contained true
+          /p:Version=${{ steps.version.outputs.version }}
+
+      - name: Create app bundle
+        run: |
+          APP="ImageBrowse.app"
+          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+          cp -R publish/* "$APP/Contents/MacOS/"
+          VERSION=${{ steps.version.outputs.version }}
+          sed "s/\${VERSION}/$VERSION/g" \
+            src/ImageBrowse.Avalonia/macOS/Info.plist > "$APP/Contents/Info.plist"
+          chmod +x "$APP/Contents/MacOS/ImageBrowse.Avalonia"
+
+      - name: Create app icon
+        run: |
+          mkdir -p app.iconset
+          magick src/ImageBrowse/Resources/app.ico[0] icon_source.png
+          for size in 16 32 128 256 512; do
+            magick icon_source.png -resize ${size}x${size} "app.iconset/icon_${size}x${size}.png"
+            double=$((size * 2))
+            magick icon_source.png -resize ${double}x${double} "app.iconset/icon_${size}x${size}@2x.png"
+          done
+          iconutil -c icns app.iconset -o ImageBrowse.app/Contents/Resources/app.icns
+
+      - name: Create DMG
+        run: |
+          create-dmg \
+            --volname "Image Browse" \
+            --icon-size 100 \
+            --app-drop-link 400 200 \
+            --icon "ImageBrowse.app" 175 200 \
+            "ImageBrowse-${{ steps.version.outputs.version }}-macos-arm64.dmg" \
+            "ImageBrowse.app" \
+          || test $? -eq 2
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64
+          path: "*.dmg"
+
+  build-macos-x64:
+    runs-on: macos-13
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install tools
+        run: |
+          brew install create-dmg
+          brew install imagemagick || true
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Publish application
+        run: >
+          dotnet publish src/ImageBrowse.Avalonia/ImageBrowse.Avalonia.csproj
+          -c Release
+          -o publish
+          -r osx-x64
+          --self-contained true
+          /p:Version=${{ steps.version.outputs.version }}
+
+      - name: Create app bundle
+        run: |
+          APP="ImageBrowse.app"
+          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+          cp -R publish/* "$APP/Contents/MacOS/"
+          VERSION=${{ steps.version.outputs.version }}
+          sed "s/\${VERSION}/$VERSION/g" \
+            src/ImageBrowse.Avalonia/macOS/Info.plist > "$APP/Contents/Info.plist"
+          chmod +x "$APP/Contents/MacOS/ImageBrowse.Avalonia"
+
+      - name: Create app icon
+        run: |
+          mkdir -p app.iconset
+          magick src/ImageBrowse/Resources/app.ico[0] icon_source.png
+          for size in 16 32 128 256 512; do
+            magick icon_source.png -resize ${size}x${size} "app.iconset/icon_${size}x${size}.png"
+            double=$((size * 2))
+            magick icon_source.png -resize ${double}x${double} "app.iconset/icon_${size}x${size}@2x.png"
+          done
+          iconutil -c icns app.iconset -o ImageBrowse.app/Contents/Resources/app.icns
+
+      - name: Create DMG
+        run: |
+          create-dmg \
+            --volname "Image Browse" \
+            --icon-size 100 \
+            --app-drop-link 400 200 \
+            --icon "ImageBrowse.app" 175 200 \
+            "ImageBrowse-${{ steps.version.outputs.version }}-macos-x64.dmg" \
+            "ImageBrowse.app" \
+          || test $? -eq 2
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-x64
+          path: "*.dmg"
+
+  build-linux-x64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Install nfpm
+        run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Publish application
+        run: >
+          dotnet publish src/ImageBrowse.Avalonia/ImageBrowse.Avalonia.csproj
+          -c Release
+          -o publish
+          -r linux-x64
+          --self-contained true
+          /p:Version=${{ steps.version.outputs.version }}
+
+      - name: Create app icon
+        run: magick src/ImageBrowse/Resources/app.ico[0] -resize 256x256 packaging/imagebrowse.png
+
+      - name: Create tar.gz
+        run: >
+          tar czf "ImageBrowse-${{ steps.version.outputs.version }}-linux-x64.tar.gz"
+          -C publish .
+
+      - name: Build deb package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: nfpm package -p deb -f packaging/nfpm.yaml
+
+      - name: Build rpm package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: nfpm package -p rpm -f packaging/nfpm.yaml
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x64
+          path: |
+            *.tar.gz
+            *.deb
+            *.rpm
+
+  create-release:
+    needs: [build-windows, build-macos-arm64, build-macos-x64, build-linux-x64]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Upload to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          find artifacts -type f \( -name "*.dmg" -o -name "*.deb" -o -name "*.rpm" -o -name "*.tar.gz" \) \
+            -exec gh release upload "$TAG" {} --repo ${{ github.repository }} --clobber \;

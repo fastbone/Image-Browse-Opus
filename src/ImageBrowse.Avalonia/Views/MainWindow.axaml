@@ -1,0 +1,165 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:ImageBrowse.Views"
+        xmlns:models="clr-namespace:ImageBrowse.Models;assembly=ImageBrowse.Core"
+        x:Class="ImageBrowse.Views.MainWindow"
+        x:CompileBindings="False"
+        Title="Image Browse"
+        Width="1400" Height="900"
+        MinWidth="800" MinHeight="500"
+        WindowStartupLocation="CenterScreen"
+        KeyDown="Window_KeyDown">
+
+    <DockPanel>
+        <!-- TOOLBAR -->
+        <Border DockPanel.Dock="Top" Padding="8,6"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
+
+                <!-- Folder tree toggle -->
+                <Button Grid.Column="0" Content="☰" ToolTip.Tip="Toggle Folder Tree (Ctrl+Shift+F)"
+                        Command="{Binding ToggleFolderTreeCommand}"
+                        Padding="8,4" Margin="2,0" FontSize="16" />
+
+                <Border Grid.Column="1" Width="1" Margin="6,4"
+                        Background="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+
+                <!-- Navigation -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2">
+                    <Button x:Name="BackButton" Content="◀" ToolTip.Tip="Back (Alt+Left)"
+                            Click="BackButton_Click" Padding="8,4" FontSize="12" />
+                    <Button x:Name="ForwardButton" Content="▶" ToolTip.Tip="Forward (Alt+Right)"
+                            Click="ForwardButton_Click" Padding="8,4" FontSize="12" />
+                    <Button x:Name="UpButton" Content="▲" ToolTip.Tip="Up (Alt+Up)"
+                            Click="UpButton_Click" Padding="8,4" FontSize="12" />
+                </StackPanel>
+
+                <Border Grid.Column="3" Width="1" Margin="6,4"
+                        Background="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+
+                <!-- Address bar -->
+                <Grid Grid.Column="4" Margin="4,0" ColumnDefinitions="Auto,*">
+                    <TextBlock Grid.Column="0" Text="📂" FontSize="13" VerticalAlignment="Center"
+                               Margin="0,0,6,0" />
+                    <TextBox Grid.Column="1" x:Name="AddressBar"
+                             Text="{Binding CurrentPath, Mode=TwoWay}"
+                             VerticalContentAlignment="Center"
+                             KeyDown="AddressBar_KeyDown" />
+                </Grid>
+
+                <Border Grid.Column="5" Width="1" Margin="6,4"
+                        Background="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+
+                <!-- Sort controls -->
+                <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="4"
+                            VerticalAlignment="Center" Margin="4,0">
+                    <TextBlock Text="Sort:" VerticalAlignment="Center" FontSize="12"
+                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                    <ComboBox x:Name="SortFieldCombo" SelectedIndex="0" Width="120"
+                              SelectionChanged="SortFieldCombo_SelectionChanged">
+                        <ComboBoxItem Content="Name" Tag="{x:Static models:SortField.FileName}" />
+                        <ComboBoxItem Content="Modified" Tag="{x:Static models:SortField.DateModified}" />
+                        <ComboBoxItem Content="Created" Tag="{x:Static models:SortField.DateCreated}" />
+                        <ComboBoxItem Content="Taken" Tag="{x:Static models:SortField.DateTaken}" />
+                        <ComboBoxItem Content="Size" Tag="{x:Static models:SortField.FileSize}" />
+                        <ComboBoxItem Content="Dims" Tag="{x:Static models:SortField.Dimensions}" />
+                        <ComboBoxItem Content="Type" Tag="{x:Static models:SortField.FileType}" />
+                        <ComboBoxItem Content="Rating" Tag="{x:Static models:SortField.Rating}" />
+                    </ComboBox>
+                    <Button x:Name="SortDirButton" Content="↓" ToolTip.Tip="Toggle Sort Direction"
+                            Command="{Binding ToggleSortDirectionCommand}" Padding="8,4" FontSize="14" />
+                </StackPanel>
+
+                <Border Grid.Column="7" Width="1" Margin="6,4"
+                        Background="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+
+                <!-- Thumbnail size slider -->
+                <StackPanel Grid.Column="8" Orientation="Horizontal" Spacing="4"
+                            VerticalAlignment="Center" Margin="4,0">
+                    <TextBlock Text="🖼" FontSize="10" VerticalAlignment="Center" />
+                    <Slider x:Name="ThumbnailSlider" Width="80"
+                            Minimum="80" Maximum="400"
+                            SmallChange="40" LargeChange="40"
+                            IsSnapToTickEnabled="True" TickFrequency="40"
+                            Value="{Binding ThumbnailSize, Mode=TwoWay}"
+                            VerticalAlignment="Center" />
+                    <TextBlock Text="🖼" FontSize="16" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <Border Grid.Column="9" Width="1" Margin="6,4"
+                        Background="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+
+                <!-- Action buttons -->
+                <StackPanel Grid.Column="10" Orientation="Horizontal" Spacing="2" Margin="4,0">
+                    <Button Content="🌓" ToolTip.Tip="Toggle Theme (Ctrl+T)"
+                            Command="{Binding ToggleThemeCommand}" Padding="8,4" FontSize="16" />
+                    <Button Content="⚙" ToolTip.Tip="Settings (Ctrl+,)"
+                            Click="SettingsButton_Click" Padding="8,4" FontSize="16" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- STATUS BAR -->
+        <Border DockPanel.Dock="Bottom" Padding="8,4"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}" FontSize="12"
+                           VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" x:Name="SelectionCountText" FontSize="12"
+                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                           VerticalAlignment="Center" Margin="12,0,0,0" />
+                <TextBlock Grid.Column="2" Text="{Binding SelectedItemInfo}" FontSize="12"
+                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                           VerticalAlignment="Center" Margin="12,0,0,0" />
+                <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding ThumbnailLoadProgress}" FontSize="12"
+                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                               VerticalAlignment="Center" Margin="8,0" />
+                    <TextBlock FontSize="12" VerticalAlignment="Center"
+                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                               Margin="8,0">
+                        <Run Text="Thumbnail: " />
+                        <Run Text="{Binding ThumbnailSize, Mode=OneWay}" />
+                        <Run Text="px" />
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- CONTENT: folder tree + gallery -->
+        <Grid x:Name="ContentGrid">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="240" MinWidth="0" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Folder tree -->
+            <TreeView x:Name="FolderTree" Grid.Column="0"
+                      SelectionChanged="FolderTree_SelectionChanged"
+                      Padding="2" FontSize="13" />
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1" Width="4" Background="Transparent"
+                          ResizeDirection="Columns" />
+
+            <!-- Gallery -->
+            <views:GalleryView x:Name="Gallery" Grid.Column="2"
+                               DataContext="{Binding}" />
+
+            <!-- Loading overlay -->
+            <Border x:Name="LoadingOverlay" Grid.Column="2" Background="#80000000"
+                    IsVisible="False" IsHitTestVisible="False">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="⏳" FontSize="32" Foreground="White"
+                               HorizontalAlignment="Center" Margin="0,0,0,8" />
+                    <TextBlock Text="Loading..." FontSize="16" Foreground="#CCCCCC"
+                               HorizontalAlignment="Center" FontWeight="Medium" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

@@ -2,5 +2,6 @@
   <Folder Name="/src/">
     <Project Path="src/ImageBrowse.Core/ImageBrowse.Core.csproj" />
     <Project Path="src/ImageBrowse/ImageBrowse.csproj" />
+    <Project Path="src/ImageBrowse.Avalonia/ImageBrowse.Avalonia.csproj" />
   </Folder>
 </Solution>

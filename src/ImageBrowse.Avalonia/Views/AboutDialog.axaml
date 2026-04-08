@@ -2,29 +2,61 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="ImageBrowse.Views.AboutDialog"
         Title="About Image Browse"
-        Width="400" Height="300"
+        Width="440" MinHeight="420" SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
         ShowInTaskbar="False"
         KeyDown="Window_KeyDown">
 
-    <Grid Margin="24" RowDefinitions="*,Auto">
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
-            <TextBlock Text="🖼" FontSize="48" HorizontalAlignment="Center" />
+    <ScrollViewer MaxHeight="520" HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24" Spacing="10">
+            <TextBlock Text="&#x1F5BC;" FontSize="48" HorizontalAlignment="Center" />
             <TextBlock Text="Image Browse" FontSize="24" FontWeight="Bold"
                        HorizontalAlignment="Center" />
             <TextBlock x:Name="VersionText" FontSize="13"
                        Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                        HorizontalAlignment="Center" />
-            <TextBlock Text="Cross-platform image browser" FontSize="13"
+            <TextBlock Text="Cross-platform image browser (Avalonia)" FontSize="13"
                        Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                       HorizontalAlignment="Center" Margin="0,4,0,0" />
-            <TextBlock Text="Built with Avalonia UI and .NET 10" FontSize="12"
+                       HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
+            <TextBlock Text="Shared Image Browse core with Magick.NET, MetadataExtractor, CommunityToolkit.Mvvm, and Microsoft.Data.Sqlite. This build does not ship LibVLC or Velopack."
+                       FontSize="12"
                        Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                       HorizontalAlignment="Center" />
-        </StackPanel>
+                       TextWrapping="Wrap" TextAlignment="Center" />
 
-        <Button Grid.Row="1" Content="Close" Width="90" Padding="12,8"
-                HorizontalAlignment="Center" Click="Close_Click" />
-    </Grid>
+            <StackPanel Spacing="4" Margin="0,8,0,0">
+                <TextBlock Text="Project site" FontSize="12" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="fastbone.github.io/Image-Browse-Opus"
+                           FontSize="12" Foreground="{DynamicResource SystemControlAccentBrush}"
+                           Cursor="Hand" TextDecorations="Underline"
+                           HorizontalAlignment="Center"
+                           PointerPressed="SiteLink_OnPointerPressed" />
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Source" FontSize="12" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="github.com/fastbone/Image-Browse-Opus"
+                           FontSize="12" Foreground="{DynamicResource SystemControlAccentBrush}"
+                           Cursor="Hand" TextDecorations="Underline"
+                           HorizontalAlignment="Center"
+                           PointerPressed="RepoLink_OnPointerPressed" />
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="License" FontSize="12" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="GNU General Public License v3.0"
+                           FontSize="12" Foreground="{DynamicResource SystemControlAccentBrush}"
+                           Cursor="Hand" TextDecorations="Underline"
+                           HorizontalAlignment="Center"
+                           PointerPressed="LicenseLink_OnPointerPressed" />
+            </StackPanel>
+
+            <Button Margin="0,16,0,0" Content="Close" Width="90" Padding="12,8"
+                    HorizontalAlignment="Center" Click="Close_Click" />
+        </StackPanel>
+    </ScrollViewer>
 </Window>

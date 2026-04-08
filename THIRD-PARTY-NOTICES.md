@@ -6,6 +6,12 @@ notices are provided in compliance with the license terms of each component.
 All third-party licenses listed below are compatible with the
 GNU General Public License v3.0 under which Image Browse is distributed.
 
+**Which build uses what**
+
+- **ImageBrowse.Core** (referenced by every UI host): CommunityToolkit.Mvvm, Magick.NET, MetadataExtractor, Microsoft.Data.Sqlite, Velopack (Velopack is exercised for auto-updates in the **Windows WPF** application).
+- **Windows WPF** (`src/ImageBrowse`): additionally LibVLCSharp, LibVLCSharp.WPF, VideoLAN.LibVLC.Windows, VirtualizingWrapPanel.
+- **macOS / Linux Avalonia** (`src/ImageBrowse.Avalonia`): additionally Avalonia UI packages listed under [Avalonia UI](#avalonia-ui).
+
 ---
 
 ## Table of Contents
@@ -21,6 +27,7 @@ GNU General Public License v3.0 under which Image Browse is distributed.
 9. [XmpCore](#xmpcore)
 10. [SQLitePCLRaw](#sqlitepclraw)
 11. [NuGet.Versioning](#nugetversioning)
+12. [Avalonia UI](#avalonia-ui)
 
 ---
 
@@ -61,6 +68,8 @@ SOFTWARE.
 
 ## LibVLCSharp / LibVLCSharp.WPF
 
+Used only in the **Windows WPF** build.
+
 - **Version**: 3.9.6
 - **Authors**: VideoLAN
 - **Project URL**: https://github.com/videolan/libvlcsharp
@@ -100,6 +109,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
 
 ## VideoLAN.LibVLC.Windows
 
+Used only in the **Windows WPF** build.
+
 - **Version**: 3.0.23
 - **Authors**: VideoLAN
 - **Project URL**: https://github.com/videolan/vlc
@@ -127,7 +138,7 @@ https://code.videolan.org/videolan/vlc/-/blob/master/COPYING
 
 ## Magick.NET (ImageMagick)
 
-- **Version**: 14.11.0 (includes Magick.NET-Q8-AnyCPU and Magick.NET.Core)
+- **Version**: 14.11.1 (includes Magick.NET-Q8-AnyCPU and Magick.NET.Core)
 - **Authors**: Dirk Lemstra
 - **Project URL**: https://github.com/dlemstra/Magick.NET
 - **License**: Apache-2.0
@@ -432,6 +443,8 @@ SOFTWARE.
 
 ## VirtualizingWrapPanel
 
+Used only in the **Windows WPF** build.
+
 - **Version**: 2.5.1
 - **Authors**: S. Baumli (sbaeumlisberger)
 - **Project URL**: https://github.com/sbaeumlisberger/VirtualizingWrapPanel
@@ -570,6 +583,49 @@ See https://www.sqlite.org/copyright.html for details.
    See the License for the specific language governing permissions and
    limitations under the License.
 ```
+
+---
+
+## Avalonia UI
+
+Used only in the **macOS / Linux Avalonia** build (`src/ImageBrowse.Avalonia`).
+
+NuGet packages (all **MIT**), version **12.0.0**:
+
+- Avalonia
+- Avalonia.Desktop
+- Avalonia.Themes.Fluent
+- Avalonia.Fonts.Inter
+
+- **Authors**: Avalonia UI contributors
+- **Project URL**: https://github.com/AvaloniaUI/Avalonia
+- **License**: MIT
+
+```
+MIT License
+
+Copyright (c) AvaloniaUI
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+See each package on https://www.nuget.org/ for the authoritative package metadata.
 
 ---
 

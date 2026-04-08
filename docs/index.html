@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Image Browse — Lightweight &amp; Blazing Fast Media Browser</title>
-<meta name="description" content="A lightweight, blazing-fast image and video browser for Windows. Browse 80+ image formats and 16 video formats with a virtualized gallery, fullscreen viewer, and instant cached thumbnails.">
+<meta name="description" content="A lightweight, blazing-fast image browser for Windows, macOS, and Linux. Browse 80+ image formats with a virtualized gallery, fullscreen viewer, and instant cached thumbnails. Windows adds LibVLC video playback for 16 video formats.">
 <meta property="og:title" content="Image Browse — Lightweight & Blazing Fast Media Browser">
-<meta property="og:description" content="Browse 80+ image formats and 16 video formats. Virtualized gallery, fullscreen viewer, star ratings, and instant cached thumbnails.">
+<meta property="og:description" content="Native builds for Windows, macOS, and Linux. 80+ image formats, virtualized gallery, fullscreen viewer, star ratings, cached thumbnails. Video playback via LibVLC on Windows.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://fastbone.github.io/Image-Browse-Opus/">
 <meta name="theme-color" content="#E94560">
@@ -139,6 +139,7 @@ img{max-width:100%;display:block}
 .fi-organize{background:rgba(250,204,21,.1);color:#FACC15}
 .fi-formats{background:rgba(233,69,96,.1);color:#E94560}
 .fi-perf{background:rgba(168,85,247,.1);color:#A855F7}
+.fi-platform{background:rgba(34,211,238,.1);color:#22D3EE}
 .feature-card h3{font-size:18px;font-weight:700;margin-bottom:8px}
 .feature-card p{font-size:14px;color:#A0A0B0;line-height:1.6}
 @media(max-width:900px){.features-grid{grid-template-columns:repeat(2,1fr)}}
@@ -284,11 +285,11 @@ img{max-width:100%;display:block}
   <div class="container">
     <div class="hero-badge"><span class="dot"></span> Free &amp; open source</div>
     <h1>Browse your media.<br><span class="accent-word">Blazing fast.</span></h1>
-    <p class="hero-sub">A lightweight Windows media browser that flies through thousands of images and videos. Supports 80+ image formats with instant cached thumbnails and zero bloat.</p>
+    <p class="hero-sub">A lightweight desktop media browser for Windows, macOS, and Linux. Fly through thousands of images with instant cached thumbnails and zero bloat. Full LibVLC video playback on Windows; macOS and Linux builds focus on images with the same powerful core.</p>
     <div class="hero-buttons">
       <a href="https://github.com/fastbone/Image-Browse-Opus/releases" class="btn-primary" target="_blank" rel="noopener">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download for Windows
+        Get releases
       </a>
       <a href="https://github.com/fastbone/Image-Browse-Opus" class="btn-secondary" target="_blank" rel="noopener">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
@@ -393,8 +394,8 @@ img{max-width:100%;display:block}
         <div class="stat-label">Cached re-visit</div>
       </div>
       <div>
-        <div class="stat-num">&infin;</div>
-        <div class="stat-label">Files per folder</div>
+        <div class="stat-num">3</div>
+        <div class="stat-label">Platforms &middot; Win &middot; macOS &middot; Linux</div>
       </div>
     </div>
   </div>
@@ -414,7 +415,7 @@ img{max-width:100%;display:block}
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         </div>
         <h3>Virtualized Gallery</h3>
-        <p>Scroll through thousands of thumbnails without a hiccup. The virtualized wrap panel only renders what you see, keeping memory low and performance high.</p>
+        <p>Scroll through thousands of thumbnails without a hiccup. A virtualized layout renders only what is on screen, keeping memory low and performance high.</p>
       </div>
       <div class="feature-card reveal">
         <div class="feature-icon fi-viewer">
@@ -427,8 +428,15 @@ img{max-width:100%;display:block}
         <div class="feature-icon fi-video">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </div>
-        <h3>Video Playback</h3>
-        <p>Integrated player powered by LibVLC. Seek, adjust speed from 0.25x to 4x, zoom with mini-map, and browse 16 video formats seamlessly alongside images.</p>
+        <h3>Video Playback (Windows)</h3>
+        <p>On Windows, an integrated LibVLC player: seek, speed from 0.25x to 4x, zoom with mini-map, and 16 video formats alongside your images. macOS and Linux builds are image-first; video features are evolving.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon fi-platform">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><path d="M6 8h.01M10 8h.01"/></svg>
+        </div>
+        <h3>Cross-platform</h3>
+        <p>Native WPF on Windows; Avalonia on macOS and Linux. One shared core powers the same gallery, viewer, ratings, tags, and SQLite-backed cache everywhere you work.</p>
       </div>
       <div class="feature-card reveal">
         <div class="feature-icon fi-organize">
@@ -442,7 +450,7 @@ img{max-width:100%;display:block}
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         </div>
         <h3>Massive Format Support</h3>
-        <p>From everyday JPEGs to camera RAW, HEIC, AVIF, JPEG XL, PSD, SVG, HDR, EXR, and more. Powered by Magick.NET with WPF fast-path for common formats.</p>
+        <p>From everyday JPEGs to camera RAW, HEIC, AVIF, JPEG XL, PSD, SVG, HDR, EXR, and more. Magick.NET everywhere; Windows adds a WPF fast-path for common types, Avalonia uses native decode for common rasters plus Magick.NET.</p>
       </div>
       <div class="feature-card reveal">
         <div class="feature-icon fi-perf">
@@ -540,7 +548,7 @@ img{max-width:100%;display:block}
         </div>
       </div>
       <div class="format-group reveal">
-        <div class="format-group-label">Video</div>
+        <div class="format-group-label">Video (playback on Windows)</div>
         <div class="format-pills">
           <span class="format-pill highlight">.mp4</span><span class="format-pill highlight">.mkv</span><span class="format-pill">.avi</span><span class="format-pill highlight">.mov</span><span class="format-pill">.webm</span><span class="format-pill">.wmv</span><span class="format-pill">.flv</span><span class="format-pill">.m4v</span><span class="format-pill">.mpg</span><span class="format-pill">.ts</span><span class="format-pill">.3gp</span><span class="format-pill">.ogv</span><span class="format-pill">.vob</span><span class="format-pill">.mts</span><span class="format-pill">.m2ts</span>
         </div>
@@ -596,7 +604,7 @@ img{max-width:100%;display:block}
     <div class="section-center reveal">
       <div class="section-label">&#9000; Keyboard Shortcuts</div>
       <h2 class="section-title">Designed for your keyboard</h2>
-      <p class="section-desc">Navigate, rate, tag, and browse without reaching for the mouse. Every action is a keystroke away.</p>
+      <p class="section-desc">Navigate, rate, tag, and browse without reaching for the mouse. Playback speed keys apply to video on Windows.</p>
     </div>
     <div class="shortcuts-grid reveal">
       <div class="shortcut-card">
@@ -640,11 +648,11 @@ img{max-width:100%;display:block}
   <div class="container">
     <div class="reveal">
       <h2>Ready to browse <span class="accent">faster</span>?</h2>
-      <p>Free and open source. Download now for Windows.</p>
+      <p>Free and open source (GPL-3.0). Self-contained releases for Windows, macOS (Intel &amp; Apple Silicon), and Linux (deb, rpm, tarball).</p>
       <div class="cta-buttons">
         <a href="https://github.com/fastbone/Image-Browse-Opus/releases" class="btn-primary" target="_blank" rel="noopener">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download for Windows
+          Download releases
         </a>
         <a href="https://github.com/fastbone/Image-Browse-Opus" class="btn-secondary" target="_blank" rel="noopener">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
@@ -652,7 +660,7 @@ img{max-width:100%;display:block}
         </a>
       </div>
       <div class="cta-reqs">
-        Windows 10+ (64-bit) <span>&middot;</span> .NET 10 Desktop Runtime <span>&middot;</span> GPL-3.0 License
+        Windows 10+ x64 <span>&middot;</span> macOS (x64 / arm64) <span>&middot;</span> Linux x64 <span>&middot;</span> Self-contained .NET 10 builds <span>&middot;</span> GPL-3.0
       </div>
     </div>
   </div>

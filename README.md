@@ -1,6 +1,6 @@
 # Image Browse
 
-A lightweight, fast image and video browser for Windows built with .NET 10 and WPF.
+A lightweight, fast desktop image and video browser built with .NET 10. **Windows** ships as a **WPF** app (full feature set); **macOS** and **Linux** use **Avalonia** with the same shared core.
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/download/dotnet/10.0)
@@ -10,14 +10,31 @@ A lightweight, fast image and video browser for Windows built with .NET 10 and W
 
 ## Overview
 
-Image Browse is a Windows desktop application for browsing and viewing images and videos. It combines a familiar folder-based navigation experience with a high-performance virtualized thumbnail gallery and a full-featured media viewer. Powered by ImageMagick through Magick.NET and LibVLC for video playback, it supports over 80 image formats and 16 video formats out of the box -- from everyday JPEGs and PNGs to camera RAW files, HEIC, AVIF, JPEG XL, PSD, SVG, HDR, and many more, plus video files like MP4, MKV, and MOV.
+Image Browse is a desktop application for browsing and viewing images (and videos on Windows). It combines folder-based navigation, a high-performance virtualized thumbnail gallery, and a fullscreen media viewer. **Magick.NET** (ImageMagick) powers broad image format support on every platform. On **Windows**, **LibVLC** adds integrated video playback and video thumbnails. The app supports over 80 image formats and, on Windows, 16 video formats out of the box—from everyday JPEGs and PNGs to camera RAW, HEIC, AVIF, JPEG XL, PSD, SVG, HDR, and more, plus video files like MP4, MKV, and MOV where playback is available.
+
+### Platform note
+
+**Windows (WPF)** is the primary build: LibVLC video playback, video thumbnails, folder tree with drives, **Velopack** auto-updates, and WPF-native fast decoding for common image types. **macOS** and **Linux** builds use **Avalonia** and share **ImageBrowse.Core**—gallery, image viewing, ratings, tags, cache, and the same format breadth via Magick.NET. Video thumbnails and in-app video playback are **not** at parity on Avalonia yet; video UX there is still evolving.
+
+---
+
+## Platforms and downloads
+
+Official builds are published on [GitHub Releases](https://github.com/fastbone/Image-Browse-Opus/releases). Release artifacts are **self-contained** (bundled .NET 10 runtime); you do not need to install the .NET runtime separately for those packages.
+
+| Platform | Artifact | How to run |
+|----------|----------|------------|
+| **Windows** (x64) | Velopack installer / portable (from release flow) | `ImageBrowse.exe` |
+| **macOS** (Apple Silicon) | `ImageBrowse-{version}-macos-arm64.dmg` | Open the DMG, drag **Image Browse**; executable inside the bundle is `ImageBrowse.Avalonia` |
+| **macOS** (Intel) | `ImageBrowse-{version}-macos-x64.dmg` | Same as above |
+| **Linux** (x64) | `.deb`, `.rpm`, or `ImageBrowse-{version}-linux-x64.tar.gz` | Install with `dpkg` / `rpm`, or extract the archive and run the published executable |
 
 ---
 
 ## Features
 
 ### Folder Navigation
-- **Folder tree** with drives and special folders (Pictures, Desktop, Documents, Downloads)
+- **Folder tree** with drives and special folders (Pictures, Desktop, Documents, Downloads) on **Windows**; layout adapts on other platforms
 - **Breadcrumb navigation bar** with clickable path segments and direct path editing (`Ctrl+L`)
 - **Back / Forward / Up** navigation with full history
 
@@ -35,8 +52,8 @@ Image Browse is a Windows desktop application for browsing and viewing images an
 - **Filmstrip** thumbnail strip for quick navigation between images (toggle pin with `T`)
 - Auto-hiding cursor and position/zoom indicators
 
-### Video Playback
-- **Integrated video player** powered by LibVLC for broad codec support
+### Video Playback (Windows)
+- **Integrated video player** powered by LibVLC for broad codec support (Windows WPF build)
 - **Playback controls**: play/pause, seek (5s or 30s jumps), volume, mute
 - **Playback speed adjustment** with `[` and `]` keys (0.25x to 4x)
 - **Video zoom** with mini-map for interactive navigation
@@ -59,7 +76,8 @@ Image Browse is a Windows desktop application for browsing and viewing images an
 - **SQLite-backed thumbnail cache** for instant re-visits
 - **Content-hash deduplication** -- identical images share cached thumbnails
 - **Folder prescan** to warm the thumbnail cache for entire directory trees (configurable depth: current folder, 1, 2, 5 levels, or unlimited)
-- WPF-native fast path for common formats (JPEG, PNG, BMP, GIF, TIFF, ICO) with Magick.NET fallback
+- **Windows**: WPF-native fast path for common formats (JPEG, PNG, BMP, GIF, TIFF, ICO) with Magick.NET fallback
+- **macOS / Linux**: Avalonia native decode for common raster types with Magick.NET fallback
 
 ### Appearance
 - **Dark theme** and **Light theme** with full UI coverage
@@ -69,14 +87,14 @@ Image Browse is a Windows desktop application for browsing and viewing images an
 - Theme preference persisted across sessions
 
 ### Updates
-- **Automatic update checking** via Velopack and GitHub Releases
-- Manual check available from the About dialog
+- **Windows**: **Automatic update checking** via Velopack and GitHub Releases; manual check in the About dialog
+- **macOS / Linux**: install newer releases from GitHub as they are published
 
 ---
 
 ## Supported Formats
 
-Image Browse supports over 80 image formats and 16 video formats. Commonly used image formats are loaded through WPF's native decoders for maximum speed; other image formats go through ImageMagick. Video playback is handled by LibVLC.
+Image Browse supports over **80 image formats** on all platforms (via Magick.NET and, on Windows, WPF fast paths for common types). **16 video formats** are supported for **playback and video thumbnails on Windows** (LibVLC). Other platforms may list video files in the gallery; full in-app playback and video thumbnails are still evolving there.
 
 ### Common Raster
 `.jpg` `.jpeg` `.jfif` `.png` `.gif` `.bmp` `.tiff` `.tif` `.ico` `.cur`
@@ -157,9 +175,9 @@ Image Browse supports over 80 image formats and 16 video formats. Commonly used 
 | `Delete` | Delete current image |
 | `1`-`5` / `NumPad1`-`NumPad5` | Set rating |
 
-### Fullscreen Viewer (Video)
+### Fullscreen Viewer (Video, Windows)
 
-When a video is playing, these shortcuts apply instead:
+When a video is playing in the WPF build, these shortcuts apply instead:
 
 | Shortcut | Action |
 |---|---|
@@ -191,8 +209,21 @@ When a video is playing, these shortcuts apply instead:
 
 ## System Requirements
 
+### Windows (WPF)
+
 - **OS**: Windows 10 or Windows 11 (64-bit), version 1809 (build 17763) or later
-- **Runtime**: .NET 10.0 Desktop Runtime ([download](https://dotnet.microsoft.com/download/dotnet/10.0))
+- **Official release builds**: self-contained (no separate .NET install required)
+- **Build from source**: [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) and a Windows environment with the **.NET desktop development** workload (or equivalent) for WPF
+
+### macOS (Avalonia)
+
+- **OS**: Recent macOS on **Apple Silicon (arm64)** or **Intel (x64)** matching the DMG you download
+- **Official release builds**: self-contained
+
+### Linux (Avalonia)
+
+- **OS**: 64-bit Linux (glibc-based distributions typical for `.deb` / `.rpm`)
+- **Official release builds**: self-contained; tarball can be extracted and run from the publish folder
 
 ---
 
@@ -200,36 +231,53 @@ When a video is playing, these shortcuts apply instead:
 
 ### From GitHub Releases
 
-1. Go to the [Releases](https://github.com/fastbone/Image-Browse-Opus/releases) page
-2. Download the latest release
-3. Run the installer or extract the portable archive
-4. Launch `ImageBrowse.exe`
-
-When installed via Velopack, Image Browse checks for updates automatically on startup and can be updated from the About dialog.
+1. Open [Releases](https://github.com/fastbone/Image-Browse-Opus/releases).
+2. Download the asset for your platform (see [Platforms and downloads](#platforms-and-downloads)).
+3. **Windows**: Run the installer or extract the portable layout; start `ImageBrowse.exe`. With Velopack, updates are offered on startup and from **About**.
+4. **macOS**: Open the `.dmg`, drag **Image Browse** to Applications (or run from the disk image). The app entry point inside the bundle is `ImageBrowse.Avalonia`.
+5. **Linux**: Install the `.deb` or `.rpm` with your package manager, or extract `ImageBrowse-*-linux-x64.tar.gz` and run the executable from the extracted folder.
 
 ### Building from Source
 
 #### Prerequisites
 
 - [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) or later
-- [Visual Studio 2026](https://visualstudio.microsoft.com/) or later with the **.NET desktop development** workload, or any editor with `dotnet` CLI access
+- **Windows WPF**: [Visual Studio 2026](https://visualstudio.microsoft.com/) or later with the **.NET desktop development** workload, or another environment that can build **WPF** (`net10.0-windows`)
+- **macOS / Linux / cross-compile**: SDK only is enough for the Avalonia project (`net10.0`)
 
-#### Clone and Build
+#### Clone
 
 ```bash
 git clone https://github.com/fastbone/Image-Browse-Opus.git
 cd Image-Browse-Opus
-dotnet restore src/ImageBrowse/ImageBrowse.csproj
-dotnet build src/ImageBrowse/ImageBrowse.csproj -c Release
 ```
 
-#### Run
+#### Windows (WPF)
 
 ```bash
+dotnet restore src/ImageBrowse/ImageBrowse.csproj
+dotnet build src/ImageBrowse/ImageBrowse.csproj -c Release
 dotnet run --project src/ImageBrowse/ImageBrowse.csproj -c Release
 ```
 
-The compiled output is placed in `src/ImageBrowse/bin/Release/net10.0-windows/`.
+Output: `src/ImageBrowse/bin/Release/net10.0-windows/`.
+
+#### macOS / Linux (Avalonia)
+
+```bash
+dotnet restore src/ImageBrowse.Avalonia/ImageBrowse.Avalonia.csproj
+dotnet build src/ImageBrowse.Avalonia/ImageBrowse.Avalonia.csproj -c Release
+dotnet run --project src/ImageBrowse.Avalonia/ImageBrowse.Avalonia.csproj -c Release
+```
+
+For a **self-contained** publish (example):
+
+```bash
+dotnet publish src/ImageBrowse.Avalonia/ImageBrowse.Avalonia.csproj -c Release -r osx-arm64 --self-contained true -o publish
+# or: -r osx-x64, -r linux-x64
+```
+
+Published files are written to the `-o` directory you specify.
 
 ---
 
@@ -256,81 +304,74 @@ Right-click or use the sort dropdown in the toolbar to set a custom sort for the
 
 ### Data Location
 
-All cached data (thumbnails, metadata, ratings, tags, settings, sort preferences) is stored in a single SQLite database at:
+All cached data (thumbnails, metadata, ratings, tags, settings, sort preferences) is stored in a single SQLite database under the per-user local application data folder:
 
-```
-%LocalApplicationData%\ImageBrowse\cache.db
-```
+- **Windows**: `%LocalApplicationData%\ImageBrowse\cache.db`
+- **macOS / Linux**: `ImageBrowse/cache.db` under the OS local application data directory (same `SpecialFolder.LocalApplicationData` semantics as .NET)
 
 ---
 
 ## Architecture
 
-Image Browse follows the **MVVM** (Model-View-ViewModel) pattern:
+Image Browse follows **MVVM**. Shared logic lives in **ImageBrowse.Core**; each UI stack has its own project.
 
 ```
-src/ImageBrowse/
+src/ImageBrowse.Core/     Shared models, view models, services, and abstractions
+src/ImageBrowse/          Windows WPF host (net10.0-windows)
   Program.cs              Application entry point (Velopack bootstrap)
   App.xaml                Application definition and startup theme
   MainWindow.xaml         Main window shell (toolbar, tree, gallery)
-  Views/
-    GalleryView.xaml      Thumbnail grid with virtualized wrap panel
-    FullscreenViewer.xaml  Fullscreen image viewer with zoom/info overlay
-    SettingsDialog.xaml    Application settings
-    PrescanDialog.xaml     Thumbnail prescan progress
-    AboutDialog.xaml       Version, credits, and update check
-  ViewModels/
-    MainViewModel.cs      Core application state and commands
-  Models/
-    ImageItem.cs          Represents an image or folder in the gallery
-    SortOption.cs         Sort field and direction
-  Services/
-    DatabaseService.cs    SQLite database access (cache, settings, ratings)
-    ThumbnailService.cs   Thumbnail generation and caching
-    FolderThumbnailService.cs  Composite folder preview generation
-    VideoThumbnailService.cs   Video thumbnail extraction via LibVLC
-    ImageLoadingService.cs     Full image loading (WPF native + Magick.NET)
-    MetadataService.cs    EXIF/metadata extraction via MetadataExtractor
-    ExifOrientationService.cs  EXIF orientation correction
-    ImageRotationService.cs    Lossless 90-degree rotation
-    SettingsService.cs    Persistent settings management
-    PrescanService.cs     Background folder tree thumbnail warming
-    UpdateService.cs      Velopack auto-update integration
-    ContentHashService.cs Content-based thumbnail deduplication
-  Helpers/
-    Converters.cs         WPF value converters
-    NaturalSortComparer.cs  Natural string sorting (e.g. "img2" before "img10")
-    DialogAnimationHelper.cs  Slide/fade dialog animations
-    RatingStarsControl.cs     Interactive star rating control
-  Themes/
-    DarkTheme.xaml        Dark color scheme and control styles
-    LightTheme.xaml       Light color scheme and control styles
-  Resources/
-    app.ico               Application icon
+  Views/                  WPF views (gallery, fullscreen, settings, prescan, about)
+  Services/               WPF-specific: LibVLC thumbnails, Velopack updates, WPF image loading
+  ...
+src/ImageBrowse.Avalonia/ macOS & Linux Avalonia host (net10.0)
+  Program.cs, App.axaml   Avalonia application entry
+  Views/                  Avalonia views (mirrored functionality where supported)
+  Services/               Avalonia image loading, thumbnails, dispatcher helpers
+  ...
 ```
 
 ---
 
 ## Third-Party Libraries
 
-Image Browse is built on the following open-source libraries. All use licenses compatible with GPL-3.0.
+Dependencies are split by **project**. All licenses are compatible with GPL-3.0. Full texts: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+### Shared (ImageBrowse.Core)
 
 | Library | Version | License | Project |
 |---|---|---|---|
 | CommunityToolkit.Mvvm | 8.4.1 | MIT | [GitHub](https://github.com/CommunityToolkit/dotnet) |
-| LibVLCSharp | 3.9.6 | LGPL-2.1+ | [GitHub](https://github.com/videolan/libvlcsharp) |
-| LibVLCSharp.WPF | 3.9.6 | LGPL-2.1+ | [GitHub](https://github.com/videolan/libvlcsharp) |
-| VideoLAN.LibVLC.Windows | 3.0.23 | LGPL-2.1+ / GPL-2.0+ | [GitHub](https://github.com/videolan/vlc) |
-| Magick.NET-Q8-AnyCPU | 14.11.0 | Apache-2.0 | [GitHub](https://github.com/dlemstra/Magick.NET) |
+| Magick.NET-Q8-AnyCPU | 14.11.1 | Apache-2.0 | [GitHub](https://github.com/dlemstra/Magick.NET) |
 | MetadataExtractor | 2.9.2 | Apache-2.0 | [GitHub](https://github.com/drewnoakes/metadata-extractor-dotnet) |
 | Microsoft.Data.Sqlite | 10.0.5 | Apache-2.0 | [GitHub](https://github.com/dotnet/efcore) |
 | Velopack | 0.0.1298 | MIT | [GitHub](https://github.com/velopack/velopack) |
+
+### Windows WPF only (src/ImageBrowse)
+
+| Library | Version | License | Project |
+|---|---|---|---|
+| LibVLCSharp | 3.9.6 | LGPL-2.1+ | [GitHub](https://github.com/videolan/libvlcsharp) |
+| LibVLCSharp.WPF | 3.9.6 | LGPL-2.1+ | [GitHub](https://github.com/videolan/libvlcsharp) |
+| VideoLAN.LibVLC.Windows | 3.0.23 | LGPL-2.1+ / GPL-2.0+ | [GitHub](https://github.com/videolan/vlc) |
 | VirtualizingWrapPanel | 2.5.1 | MIT | [GitHub](https://github.com/sbaeumlisberger/VirtualizingWrapPanel) |
+
+### macOS / Linux Avalonia only (src/ImageBrowse.Avalonia)
+
+| Library | Version | License | Project |
+|---|---|---|---|
+| Avalonia | 12.0.0 | MIT | [GitHub](https://github.com/AvaloniaUI/Avalonia) |
+| Avalonia.Desktop | 12.0.0 | MIT | [GitHub](https://github.com/AvaloniaUI/Avalonia) |
+| Avalonia.Themes.Fluent | 12.0.0 | MIT | [GitHub](https://github.com/AvaloniaUI/Avalonia) |
+| Avalonia.Fonts.Inter | 12.0.0 | MIT | [GitHub](https://github.com/AvaloniaUI/Avalonia) |
+
+### Transitive (typical)
+
+| Library | Version | License | Project |
+|---|---|---|---|
 | XmpCore | 6.1.10.1 | BSD-3-Clause | [GitHub](https://github.com/drewnoakes/xmp-core-dotnet) |
 | SQLitePCLRaw | 2.1.11 | Apache-2.0 | [GitHub](https://github.com/ericsink/SQLitePCL.raw) |
 | NuGet.Versioning | 6.14.0 | Apache-2.0 | [GitHub](https://github.com/NuGet/NuGet.Client) |
-
-For full license texts, see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 ---
 
@@ -351,6 +392,8 @@ Please keep pull requests focused on a single change. For large features or arch
 ## License
 
 Image Browse is licensed under the **GNU General Public License v3.0**.
+
+A short copyright summary is in [COPYRIGHT](COPYRIGHT). The complete legal text is in [LICENSE](LICENSE).
 
 Copyright (c) 2026 fastbone
 

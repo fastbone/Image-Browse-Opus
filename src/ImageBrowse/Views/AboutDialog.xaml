@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="About Image Browse"
-        Width="460" Height="460"
+        Width="480" Height="540"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
@@ -72,13 +72,39 @@
         <Border Grid.Row="3" Background="{DynamicResource BgSurfaceBrush}"
                 CornerRadius="8" Padding="16" Margin="0,0,0,0">
             <StackPanel>
-                <TextBlock Text="Built with" FontWeight="SemiBold" FontSize="13"
+                <TextBlock TextWrapping="Wrap" FontSize="12"
+                           Foreground="{DynamicResource FgSecondaryBrush}"
+                           LineHeight="20" Margin="0,0,0,10">
+                    This is the <Run FontWeight="SemiBold" Foreground="{DynamicResource FgPrimaryBrush}">Windows (WPF)</Run> build.
+                    macOS and Linux releases use <Run FontWeight="SemiBold" Foreground="{DynamicResource FgPrimaryBrush}">Avalonia</Run> with the same Image Browse core.
+                </TextBlock>
+                <TextBlock Text="Built with (this build)" FontWeight="SemiBold" FontSize="13"
                            Foreground="{DynamicResource FgPrimaryBrush}" Margin="0,0,0,8" />
                 <TextBlock TextWrapping="Wrap" FontSize="12"
                            Foreground="{DynamicResource FgSecondaryBrush}"
                            LineHeight="22">
                     Magick.NET (ImageMagick) · LibVLCSharp (LibVLC) · MetadataExtractor · CommunityToolkit.Mvvm ·
                     VirtualizingWrapPanel · Velopack · Microsoft.Data.Sqlite · .NET 10 / WPF
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap" FontSize="12"
+                           Foreground="{DynamicResource FgSecondaryBrush}"
+                           Margin="0,12,0,0" LineHeight="20">
+                    <Run Text="License: " />
+                    <Hyperlink NavigateUri="https://github.com/fastbone/Image-Browse-Opus/blob/main/LICENSE"
+                               RequestNavigate="Hyperlink_RequestNavigate"
+                               Foreground="{DynamicResource AccentBrush}"
+                               TextDecorations="None">
+                        GNU General Public License v3.0
+                        <Hyperlink.Style>
+                            <Style TargetType="Hyperlink">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentHoverBrush}" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Hyperlink.Style>
+                    </Hyperlink>
                 </TextBlock>
             </StackPanel>
         </Border>

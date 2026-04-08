@@ -1,0 +1,116 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:ImageBrowse.Models;assembly=ImageBrowse.Core"
+        x:Class="ImageBrowse.Views.SettingsDialog"
+        x:CompileBindings="False"
+        Title="Settings"
+        Width="560" Height="680"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ShowInTaskbar="False"
+        KeyDown="Window_KeyDown">
+
+    <Grid Margin="24" RowDefinitions="Auto,*,Auto">
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
+            <TextBlock Text="⚙" FontSize="22" VerticalAlignment="Center" Margin="0,0,12,0" />
+            <TextBlock Text="Settings" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,16">
+            <StackPanel Spacing="12">
+                <!-- Startup Folder -->
+                <Border Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                        CornerRadius="8" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="Startup Folder" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBox x:Name="StartupFolderBox" VerticalContentAlignment="Center" />
+                            <Button Grid.Column="1" Content="Browse..." Margin="8,0,0,0"
+                                    Padding="12,6" Click="BrowseFolder_Click" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Default Sort -->
+                <Border Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                        CornerRadius="8" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="Default Sort" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4" />
+                        <TextBlock Text="Applied when a folder has no custom sort saved"
+                                   FontSize="11" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                   Margin="0,0,0,8" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ComboBox x:Name="DefaultSortFieldCombo" Width="140">
+                                <ComboBoxItem Content="Name" Tag="{x:Static models:SortField.FileName}" />
+                                <ComboBoxItem Content="Date Modified" Tag="{x:Static models:SortField.DateModified}" />
+                                <ComboBoxItem Content="Date Created" Tag="{x:Static models:SortField.DateCreated}" />
+                                <ComboBoxItem Content="Date Taken" Tag="{x:Static models:SortField.DateTaken}" />
+                                <ComboBoxItem Content="File Size" Tag="{x:Static models:SortField.FileSize}" />
+                                <ComboBoxItem Content="Dimensions" Tag="{x:Static models:SortField.Dimensions}" />
+                                <ComboBoxItem Content="File Type" Tag="{x:Static models:SortField.FileType}" />
+                                <ComboBoxItem Content="Rating" Tag="{x:Static models:SortField.Rating}" />
+                            </ComboBox>
+                            <Button x:Name="DefaultSortDirButton" Padding="10,4" FontSize="14"
+                                    Click="ToggleDefaultSortDir_Click" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Appearance -->
+                <Border Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                        CornerRadius="8" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="Appearance" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8" />
+                        <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,0,0,10">
+                            <RadioButton x:Name="DarkRadio" Content="Dark" FontSize="13" />
+                            <RadioButton x:Name="LightRadio" Content="Light" FontSize="13" />
+                        </StackPanel>
+                        <CheckBox x:Name="EnableAnimationsCheck" Content="Enable transition animations" FontSize="13" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Behavior -->
+                <Border Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                        CornerRadius="8" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="Behavior" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8" />
+                        <CheckBox x:Name="ConfirmDeleteCheck" Content="Confirm before deleting files"
+                                  FontSize="13" Margin="0,0,0,12" />
+                        <CheckBox x:Name="BossModeCheck" Content="Double-press Escape to quit application (Boss Mode)"
+                                  FontSize="13" Margin="0,0,0,12" />
+                        <CheckBox x:Name="AutoUpdateCheck" Content="Check for updates on startup"
+                                  FontSize="13" Margin="0,0,0,12" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Content="Clear Thumbnail Cache" Padding="12,6"
+                                    Click="ClearCache_Click" />
+                            <TextBlock x:Name="CacheSizeText" FontSize="12"
+                                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- File Operations -->
+                <Border Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                        CornerRadius="8" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="File Operations" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4" />
+                        <TextBlock Text="Controls whether the app can rename, delete, move, and copy files and folders."
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                   FontSize="11" Margin="0,0,0,8" TextWrapping="Wrap" />
+                        <CheckBox x:Name="FileOperationsCheck" Content="Enable file and folder operations" FontSize="13" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Content="OK" Width="90" Padding="12,8"
+                    Click="OK_Click" />
+            <Button Content="Cancel" Width="80" Padding="8,8"
+                    Click="Cancel_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

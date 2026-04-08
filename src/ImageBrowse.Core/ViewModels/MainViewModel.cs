@@ -3,19 +3,21 @@ using CommunityToolkit.Mvvm.Input;
 using ImageBrowse.Helpers;
 using ImageBrowse.Models;
 using ImageBrowse.Services;
+using ImageBrowse.Services.Abstractions;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Windows;
 
 namespace ImageBrowse.ViewModels;
 
 public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly DatabaseService _db;
-    private readonly ThumbnailService _thumbnailService;
-    private readonly FolderThumbnailService _folderThumbnailService;
+    private readonly IThumbnailService _thumbnailService;
+    private readonly IFolderThumbnailService _folderThumbnailService;
     private readonly MetadataService _metadataService;
-    private readonly ImageLoadingService _imageLoadingService;
+    private readonly IImageLoadingService _imageLoadingService;
+    private readonly IDispatcherService _dispatcher;
+    private readonly IComparer<string> _naturalSortComparer;
 
     public DatabaseService Database => _db;
     public SettingsService Settings { get; }
@@ -64,14 +66,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _loadCts;
     private bool _suppressSortSave;
 
-    public MainViewModel()
+    public MainViewModel(
+        DatabaseService db,
+        SettingsService settings,
+        IThumbnailService thumbnailService,
+        IFolderThumbnailService folderThumbnailService,
+        MetadataService metadataService,
+        IImageLoadingService imageLoadingService,
+        IDispatcherService dispatcher,
+        IComparer<string> naturalSortComparer)
     {
-        _db = new DatabaseService();
-        Settings = new SettingsService(_db);
-        _thumbnailService = new ThumbnailService(_db);
-        _folderThumbnailService = new FolderThumbnailService(_db);
-        _metadataService = new MetadataService(_db);
-        _imageLoadingService = new ImageLoadingService();
+        _db = db;
+        Settings = settings;
+        _thumbnailService = thumbnailService;
+        _folderThumbnailService = folderThumbnailService;
+        _metadataService = metadataService;
+        _imageLoadingService = imageLoadingService;
+        _dispatcher = dispatcher;
+        _naturalSortComparer = naturalSortComparer;
 
         _isDarkTheme = Settings.IsDarkTheme;
         _thumbnailSize = Settings.ThumbnailSize;
@@ -149,7 +161,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                     })
                     .ToList();
 
-                var fileItems = ImageLoadingService.GetSupportedFiles(path)
+                var fileItems = SupportedFormats.GetSupportedFiles(path)
                     .Select(f =>
                     {
                         ct.ThrowIfCancellationRequested();
@@ -164,7 +176,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                             DateCreated = fi.CreationTime,
                             Rating = _db.GetRating(f),
                             IsTagged = _db.GetTagged(f),
-                            IsVideo = ImageLoadingService.IsVideoFile(f)
+                            IsVideo = SupportedFormats.IsVideoFile(f)
                         };
                     })
                     .ToList();
@@ -228,9 +240,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
                     if (ct.IsCancellationRequested) break;
                     try
                     {
-                        int count = ImageLoadingService.GetSupportedFiles(folder.FilePath).Take(100).Count();
+                        int count = SupportedFormats.GetSupportedFiles(folder.FilePath).Take(100).Count();
                         if (count != folder.FolderImageCount)
-                            Application.Current?.Dispatcher.BeginInvoke(() => folder.FolderImageCount = count);
+                            _dispatcher.BeginInvoke(() => folder.FolderImageCount = count);
                     }
                     catch { }
                 }
@@ -291,8 +303,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var sortedFolders = CurrentSortField switch
         {
             SortField.FileName => CurrentSortDirection == SortDirection.Ascending
-                ? folders.OrderBy(i => i.FileName, Helpers.NaturalSortComparer.Instance)
-                : folders.OrderByDescending(i => i.FileName, Helpers.NaturalSortComparer.Instance),
+                ? folders.OrderBy(i => i.FileName, _naturalSortComparer)
+                : folders.OrderByDescending(i => i.FileName, _naturalSortComparer),
             SortField.DateModified => CurrentSortDirection == SortDirection.Ascending
                 ? folders.OrderBy(i => i.DateModified)
                 : folders.OrderByDescending(i => i.DateModified),
@@ -300,15 +312,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 ? folders.OrderBy(i => i.DateCreated)
                 : folders.OrderByDescending(i => i.DateCreated),
             _ => CurrentSortDirection == SortDirection.Ascending
-                ? folders.OrderBy(i => i.FileName, Helpers.NaturalSortComparer.Instance)
-                : folders.OrderByDescending(i => i.FileName, Helpers.NaturalSortComparer.Instance),
+                ? folders.OrderBy(i => i.FileName, _naturalSortComparer)
+                : folders.OrderByDescending(i => i.FileName, _naturalSortComparer),
         };
 
         var sortedImages = CurrentSortField switch
         {
             SortField.FileName => CurrentSortDirection == SortDirection.Ascending
-                ? images.OrderBy(i => i.FileName, Helpers.NaturalSortComparer.Instance)
-                : images.OrderByDescending(i => i.FileName, Helpers.NaturalSortComparer.Instance),
+                ? images.OrderBy(i => i.FileName, _naturalSortComparer)
+                : images.OrderByDescending(i => i.FileName, _naturalSortComparer),
             SortField.DateModified => CurrentSortDirection == SortDirection.Ascending
                 ? images.OrderBy(i => i.DateModified)
                 : images.OrderByDescending(i => i.DateModified),
@@ -325,12 +337,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 ? images.OrderBy(i => (long)i.ImageWidth * i.ImageHeight)
                 : images.OrderByDescending(i => (long)i.ImageWidth * i.ImageHeight),
             SortField.FileType => CurrentSortDirection == SortDirection.Ascending
-                ? images.OrderBy(i => i.Extension).ThenBy(i => i.FileName, Helpers.NaturalSortComparer.Instance)
-                : images.OrderByDescending(i => i.Extension).ThenByDescending(i => i.FileName, Helpers.NaturalSortComparer.Instance),
+                ? images.OrderBy(i => i.Extension).ThenBy(i => i.FileName, _naturalSortComparer)
+                : images.OrderByDescending(i => i.Extension).ThenByDescending(i => i.FileName, _naturalSortComparer),
             SortField.Rating => CurrentSortDirection == SortDirection.Ascending
-                ? images.OrderBy(i => i.Rating).ThenBy(i => i.FileName, Helpers.NaturalSortComparer.Instance)
-                : images.OrderByDescending(i => i.Rating).ThenByDescending(i => i.FileName, Helpers.NaturalSortComparer.Instance),
-            _ => images.OrderBy(i => i.FileName, Helpers.NaturalSortComparer.Instance)
+                ? images.OrderBy(i => i.Rating).ThenBy(i => i.FileName, _naturalSortComparer)
+                : images.OrderByDescending(i => i.Rating).ThenByDescending(i => i.FileName, _naturalSortComparer),
+            _ => images.OrderBy(i => i.FileName, _naturalSortComparer)
         };
 
         return sortedFolders.Concat(sortedImages);
@@ -561,12 +573,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         UpdateStatusCount();
     }
 
-    public System.Windows.Media.Imaging.BitmapSource? LoadFullImage(string filePath)
+    public object? LoadFullImage(string filePath)
     {
         return _imageLoadingService.LoadFullImage(filePath);
     }
 
-    public System.Windows.Media.Imaging.BitmapSource? LoadScreenImage(string filePath, int maxDimension)
+    public object? LoadScreenImage(string filePath, int maxDimension)
     {
         return _imageLoadingService.LoadFullImage(filePath, maxDimension);
     }
@@ -624,9 +636,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void OnThumbnailReady(string filePath, System.Windows.Media.Imaging.BitmapSource thumbnail, int width, int height)
+    private void OnThumbnailReady(string filePath, object thumbnail, int width, int height)
     {
-        Application.Current?.Dispatcher.BeginInvoke(() =>
+        _dispatcher.BeginInvoke(() =>
         {
             var item = SortedImages.FirstOrDefault(i => i.FilePath == filePath);
             if (item is not null)
@@ -640,9 +652,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         });
     }
 
-    private void OnVideoThumbnailReady(string filePath, System.Windows.Media.Imaging.BitmapSource thumbnail, int width, int height, TimeSpan duration)
+    private void OnVideoThumbnailReady(string filePath, object thumbnail, int width, int height, TimeSpan duration)
     {
-        Application.Current?.Dispatcher.BeginInvoke(() =>
+        _dispatcher.BeginInvoke(() =>
         {
             var item = SortedImages.FirstOrDefault(i => i.FilePath == filePath);
             if (item is not null)
@@ -659,7 +671,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void OnThumbnailFailed(string filePath)
     {
-        Application.Current?.Dispatcher.BeginInvoke(() =>
+        _dispatcher.BeginInvoke(() =>
         {
             var item = SortedImages.FirstOrDefault(i => i.FilePath == filePath);
             if (item is not null)
@@ -668,9 +680,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         });
     }
 
-    private void OnFolderThumbnailReady(string folderPath, System.Windows.Media.Imaging.BitmapSource thumbnail)
+    private void OnFolderThumbnailReady(string folderPath, object thumbnail)
     {
-        Application.Current?.Dispatcher.BeginInvoke(() =>
+        _dispatcher.BeginInvoke(() =>
         {
             var item = SortedImages.FirstOrDefault(i => i.FilePath == folderPath && i.IsFolder);
             if (item is not null)

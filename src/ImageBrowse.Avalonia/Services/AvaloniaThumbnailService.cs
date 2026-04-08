@@ -1,18 +1,16 @@
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.IO;
-using System.Windows;
-using System.Windows.Media.Imaging;
+using Avalonia.Media.Imaging;
 using ImageBrowse.Services.Abstractions;
 using ImageMagick;
 using ImageMagick.Formats;
 
 namespace ImageBrowse.Services;
 
-public sealed class ThumbnailService : IThumbnailService
+public sealed class AvaloniaThumbnailService : IThumbnailService
 {
     private readonly DatabaseService _db;
-    private readonly Lazy<VideoThumbnailService> _videoThumbService = new(() => new VideoThumbnailService());
     private readonly ConcurrentDictionary<string, byte> _inProgress = new();
     private readonly SemaphoreSlim _semaphore;
     private CancellationTokenSource _cts = new();
@@ -26,11 +24,6 @@ public sealed class ThumbnailService : IThumbnailService
         ".raw", ".bay", ".cap", ".iiq", ".ptx"
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
-    private static readonly FrozenSet<string> WpfNativeExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".tif", ".ico", ".jfif"
-    }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
-
     private static readonly FrozenSet<string> JpegExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         ".jpg", ".jpeg", ".jfif"
@@ -40,7 +33,7 @@ public sealed class ThumbnailService : IThumbnailService
     public event Action<string, object, int, int, TimeSpan>? VideoThumbnailReady;
     public event Action<string>? ThumbnailFailed;
 
-    public ThumbnailService(DatabaseService db)
+    public AvaloniaThumbnailService(DatabaseService db)
     {
         _db = db;
         int workerCount = Math.Max(2, Environment.ProcessorCount / 2);
@@ -55,13 +48,7 @@ public sealed class ThumbnailService : IThumbnailService
         try
         {
             using var stream = new MemoryStream(data);
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.StreamSource = stream;
-            bitmap.EndInit();
-            bitmap.Freeze();
-            return bitmap;
+            return new Bitmap(stream);
         }
         catch
         {
@@ -102,7 +89,7 @@ public sealed class ThumbnailService : IThumbnailService
         {
             if (SupportedFormats.IsVideoFile(filePath))
             {
-                GenerateVideoThumbnail(filePath, lastModified, fileSize);
+                ThumbnailFailed?.Invoke(filePath);
                 return;
             }
 
@@ -118,12 +105,7 @@ public sealed class ThumbnailService : IThumbnailService
                         hashHit.Value.Data, hashHit.Value.Width, hashHit.Value.Height, contentHash);
 
                     using var hs = new MemoryStream(hashHit.Value.Data);
-                    var hbmp = new BitmapImage();
-                    hbmp.BeginInit();
-                    hbmp.CacheOption = BitmapCacheOption.OnLoad;
-                    hbmp.StreamSource = hs;
-                    hbmp.EndInit();
-                    hbmp.Freeze();
+                    var hbmp = new Bitmap(hs);
                     ThumbnailReady?.Invoke(filePath, hbmp, hashHit.Value.Width, hashHit.Value.Height);
                     return;
                 }
@@ -140,12 +122,6 @@ public sealed class ThumbnailService : IThumbnailService
                 if (thumbnailData.Length == 0)
                     (thumbnailData, width, height) = GenerateWithMagick(filePath);
             }
-            else if (WpfNativeExtensions.Contains(ext))
-            {
-                (thumbnailData, width, height) = GenerateWithWpf(filePath);
-                if (thumbnailData.Length == 0)
-                    (thumbnailData, width, height) = GenerateWithMagick(filePath);
-            }
             else
             {
                 (thumbnailData, width, height) = GenerateWithMagick(filePath);
@@ -156,78 +132,12 @@ public sealed class ThumbnailService : IThumbnailService
             _db.SaveThumbnail(filePath, lastModified, fileSize, thumbnailData, width, height, contentHash);
 
             using var stream = new MemoryStream(thumbnailData);
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.StreamSource = stream;
-            bitmap.EndInit();
-            bitmap.Freeze();
-
+            var bitmap = new Bitmap(stream);
             ThumbnailReady?.Invoke(filePath, bitmap, width, height);
         }
         catch
         {
             ThumbnailFailed?.Invoke(filePath);
-        }
-    }
-
-    private void GenerateVideoThumbnail(string filePath, DateTime lastModified, long fileSize)
-    {
-        try
-        {
-            var result = _videoThumbService.Value.GenerateThumbnail(filePath);
-            if (result is null)
-            {
-                ThumbnailFailed?.Invoke(filePath);
-                return;
-            }
-
-            var (data, width, height, duration) = result.Value;
-            _db.SaveThumbnail(filePath, lastModified, fileSize, data, width, height, null);
-
-            using var stream = new MemoryStream(data);
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.StreamSource = stream;
-            bitmap.EndInit();
-            bitmap.Freeze();
-
-            VideoThumbnailReady?.Invoke(filePath, bitmap, width, height, duration);
-        }
-        catch
-        {
-            ThumbnailFailed?.Invoke(filePath);
-        }
-    }
-
-    private static (byte[] Data, int Width, int Height) GenerateWithWpf(string filePath)
-    {
-        try
-        {
-            int orientation = ExifOrientationService.ReadOrientation(filePath);
-
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.DecodePixelWidth = ThumbnailSize;
-            bitmap.UriSource = new Uri(filePath, UriKind.Absolute);
-            bitmap.EndInit();
-            bitmap.Freeze();
-
-            var oriented = ExifOrientationService.ApplyOrientation(bitmap, orientation);
-            int origW = oriented.PixelWidth;
-            int origH = oriented.PixelHeight;
-
-            var encoder = new JpegBitmapEncoder { QualityLevel = 85 };
-            encoder.Frames.Add(BitmapFrame.Create(oriented));
-            using var ms = new MemoryStream();
-            encoder.Save(ms);
-            return (ms.ToArray(), origW, origH);
-        }
-        catch
-        {
-            return ([], 0, 0);
         }
     }
 
@@ -322,7 +232,5 @@ public sealed class ThumbnailService : IThumbnailService
         _cts.Cancel();
         _cts.Dispose();
         _semaphore.Dispose();
-        if (_videoThumbService.IsValueCreated)
-            _videoThumbService.Value.Dispose();
     }
 }

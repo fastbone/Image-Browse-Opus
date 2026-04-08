@@ -2,9 +2,6 @@ using ImageBrowse.Models;
 using MetadataExtractor;
 using MetadataExtractor.Formats.Exif;
 using MetadataExtractor.Formats.Jpeg;
-using MetadataExtractor.Formats.Png;
-using MetadataExtractor.Formats.Bmp;
-using System.Globalization;
 using Directory = MetadataExtractor.Directory;
 
 namespace ImageBrowse.Services;

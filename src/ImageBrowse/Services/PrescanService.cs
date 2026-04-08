@@ -50,7 +50,7 @@ public sealed class PrescanService
         foreach (var folder in folders)
         {
             ct.ThrowIfCancellationRequested();
-            var files = ImageLoadingService.GetSupportedFiles(folder).ToList();
+            var files = SupportedFormats.GetSupportedFiles(folder).ToList();
             folderFiles.Add((folder, files));
             totalFiles += files.Count;
         }
@@ -134,7 +134,7 @@ public sealed class PrescanService
     {
         try
         {
-            if (ImageLoadingService.IsVideoFile(filePath)) return false;
+            if (SupportedFormats.IsVideoFile(filePath)) return false;
 
             var fi = new FileInfo(filePath);
             if (!fi.Exists) return false;

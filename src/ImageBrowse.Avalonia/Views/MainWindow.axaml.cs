@@ -80,6 +80,9 @@ public partial class MainWindow : Window
             case nameof(MainViewModel.IsDarkTheme):
                 UpdateTheme();
                 break;
+            case nameof(MainViewModel.IsFullscreenActive):
+                if (_vm.IsFullscreenActive) ShowFullscreenViewer();
+                break;
         }
     }
 
@@ -419,11 +422,36 @@ public partial class MainWindow : Window
 
     #endregion
 
+    #region Fullscreen Viewer
+
+    private void ShowFullscreenViewer()
+    {
+        if (_vm.SelectedItem is null || _vm.SelectedItem.IsFolder) return;
+
+        var viewer = new FullscreenViewer(_vm);
+        viewer.Closed += (_, _) =>
+        {
+            _vm.ExitFullscreen();
+            if (_vm.SelectedItem is not null)
+                Gallery.ScrollToItem(_vm.SelectedItem);
+        };
+        viewer.ShowDialog(this);
+    }
+
+    #endregion
+
     #region Toolbar Buttons
 
     private void SettingsButton_Click(object? sender, RoutedEventArgs e)
     {
-        // Settings dialog - placeholder for now
+        var dialog = new SettingsDialog(_vm);
+        dialog.ShowDialog(this);
+    }
+
+    private void AboutButton_Click(object? sender, RoutedEventArgs e)
+    {
+        var dialog = new AboutDialog();
+        dialog.ShowDialog(this);
     }
 
     #endregion

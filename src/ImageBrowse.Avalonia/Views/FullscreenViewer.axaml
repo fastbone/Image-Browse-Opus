@@ -1,0 +1,166 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:ImageBrowse.Models;assembly=ImageBrowse.Core"
+        xmlns:helpers="clr-namespace:ImageBrowse.Helpers"
+        x:Class="ImageBrowse.Views.FullscreenViewer"
+        x:CompileBindings="False"
+        Title="Image Viewer"
+        WindowState="Maximized"
+        WindowDecorations="None"
+        Background="Black"
+        KeyDown="Window_KeyDown"
+        PointerWheelChanged="Window_PointerWheelChanged"
+        PointerMoved="Window_PointerMoved">
+
+    <Window.Resources>
+        <helpers:RatingToStarsConverter x:Key="RatingToStars" />
+    </Window.Resources>
+
+    <Panel x:Name="RootPanel">
+        <!-- Image display with scroll for zoom/pan -->
+        <ScrollViewer x:Name="ImageScroller"
+                      HorizontalScrollBarVisibility="Hidden"
+                      VerticalScrollBarVisibility="Hidden"
+                      Background="Black"
+                      PointerPressed="ImageScroller_PointerPressed"
+                      PointerReleased="ImageScroller_PointerReleased"
+                      PointerMoved="ImageScroller_PointerMoved">
+            <Panel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Image x:Name="DisplayImage"
+                       Stretch="Uniform"
+                       MaxWidth="{Binding $parent[Window].Bounds.Width}"
+                       MaxHeight="{Binding $parent[Window].Bounds.Height}"
+                       RenderTransformOrigin="0.5,0.5">
+                    <Image.RenderTransform>
+                        <ScaleTransform ScaleX="1" ScaleY="1" />
+                    </Image.RenderTransform>
+                </Image>
+            </Panel>
+        </ScrollViewer>
+
+        <!-- Left nav hover zone -->
+        <Border x:Name="NavLeft" Width="120" HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                Background="Transparent" Opacity="0" IsHitTestVisible="True" Cursor="Hand"
+                PointerEntered="NavLeft_PointerEntered" PointerExited="NavZone_PointerExited"
+                PointerPressed="NavLeft_PointerPressed">
+            <TextBlock Text="◀" FontSize="28" Foreground="#88FFFFFF"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+
+        <!-- Right nav hover zone -->
+        <Border x:Name="NavRight" Width="120" HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                Background="Transparent" Opacity="0" IsHitTestVisible="True" Cursor="Hand"
+                PointerEntered="NavRight_PointerEntered" PointerExited="NavZone_PointerExited"
+                PointerPressed="NavRight_PointerPressed">
+            <TextBlock Text="▶" FontSize="28" Foreground="#88FFFFFF"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+
+        <!-- Info panel (press I to toggle) -->
+        <Border x:Name="InfoPanel" Opacity="0" IsHitTestVisible="False"
+                Background="#CC000000" CornerRadius="12"
+                Padding="20" Margin="20"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                MaxWidth="400">
+            <StackPanel>
+                <TextBlock x:Name="InfoFileName" FontSize="16" FontWeight="SemiBold"
+                           Foreground="White" TextWrapping="Wrap" Margin="0,0,0,12" />
+
+                <Grid x:Name="InfoDimensionsGrid" Margin="0,2" ColumnDefinitions="90,*">
+                    <TextBlock Text="Dimensions" FontSize="12" Foreground="#888888" />
+                    <TextBlock x:Name="InfoDimensions" Grid.Column="1" FontSize="12" Foreground="#DDDDDD" />
+                </Grid>
+                <Grid Margin="0,2" ColumnDefinitions="90,*">
+                    <TextBlock Text="Size" FontSize="12" Foreground="#888888" />
+                    <TextBlock x:Name="InfoFileSize" Grid.Column="1" FontSize="12" Foreground="#DDDDDD" />
+                </Grid>
+
+                <Rectangle Height="1" Fill="#333333" Margin="0,8" />
+
+                <Grid x:Name="InfoDateTakenGrid" Margin="0,2" ColumnDefinitions="90,*">
+                    <TextBlock Text="Taken" FontSize="12" Foreground="#888888" />
+                    <TextBlock x:Name="InfoDateTaken" Grid.Column="1" FontSize="12" Foreground="#DDDDDD" />
+                </Grid>
+                <Grid Margin="0,2" ColumnDefinitions="90,*">
+                    <TextBlock Text="Modified" FontSize="12" Foreground="#888888" />
+                    <TextBlock x:Name="InfoDateModified" Grid.Column="1" FontSize="12" Foreground="#DDDDDD" />
+                </Grid>
+
+                <Rectangle x:Name="CameraSeparator" Height="1" Fill="#333333" Margin="0,8" />
+
+                <Grid x:Name="InfoCameraGrid" Margin="0,2" ColumnDefinitions="90,*">
+                    <TextBlock Text="Camera" FontSize="12" Foreground="#888888" />
+                    <TextBlock x:Name="InfoCamera" Grid.Column="1" FontSize="12" Foreground="#DDDDDD" TextWrapping="Wrap" />
+                </Grid>
+                <Grid x:Name="InfoLensGrid" Margin="0,2" ColumnDefinitions="90,*">
+                    <TextBlock Text="Lens" FontSize="12" Foreground="#888888" />
+                    <TextBlock x:Name="InfoLens" Grid.Column="1" FontSize="12" Foreground="#DDDDDD" TextWrapping="Wrap" />
+                </Grid>
+                <Grid x:Name="InfoExposureGrid" Margin="0,2" ColumnDefinitions="90,*">
+                    <TextBlock Text="Exposure" FontSize="12" Foreground="#888888" />
+                    <TextBlock x:Name="InfoExposure" Grid.Column="1" FontSize="12" Foreground="#DDDDDD" TextWrapping="Wrap" />
+                </Grid>
+
+                <TextBlock x:Name="InfoRatingText" FontSize="14" Foreground="Gold" Margin="0,10,0,0" />
+            </StackPanel>
+        </Border>
+
+        <!-- Filmstrip thumbnail strip (bottom) -->
+        <Border x:Name="FilmstripPanel" Opacity="0" IsHitTestVisible="True"
+                Background="#CC000000" VerticalAlignment="Bottom"
+                Height="86"
+                PointerEntered="Filmstrip_PointerEntered"
+                PointerExited="Filmstrip_PointerExited">
+            <ListBox x:Name="FilmstripList"
+                     Background="Transparent" BorderThickness="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                     ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                     SelectionMode="Single"
+                     SelectionChanged="FilmstripList_SelectionChanged">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Margin" Value="3,8" />
+                        <Setter Property="Opacity" Value="0.5" />
+                    </Style>
+                    <Style Selector="ListBoxItem:selected">
+                        <Setter Property="Opacity" Value="1" />
+                    </Style>
+                    <Style Selector="ListBoxItem:pointerover">
+                        <Setter Property="Opacity" Value="0.85" />
+                    </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="models:ImageItem">
+                        <Border CornerRadius="3" ClipToBounds="True">
+                            <Image Source="{Binding Thumbnail}" Width="60" Height="60"
+                                   Stretch="UniformToFill" />
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <!-- Position indicator (bottom center) -->
+        <Border x:Name="PositionIndicator" Opacity="0" IsHitTestVisible="False"
+                Background="#88000000" CornerRadius="14"
+                Padding="18,8" Margin="0,0,0,30"
+                HorizontalAlignment="Center" VerticalAlignment="Bottom">
+            <TextBlock x:Name="PositionText" FontSize="14" Foreground="White"
+                       FontWeight="Medium" />
+        </Border>
+
+        <!-- Zoom indicator (top right) -->
+        <Border x:Name="ZoomIndicator" Opacity="0" IsHitTestVisible="False"
+                Background="#88000000" CornerRadius="8"
+                Padding="12,6" Margin="20"
+                HorizontalAlignment="Right" VerticalAlignment="Top">
+            <TextBlock x:Name="ZoomText" FontSize="13" Foreground="White" />
+        </Border>
+    </Panel>
+</Window>

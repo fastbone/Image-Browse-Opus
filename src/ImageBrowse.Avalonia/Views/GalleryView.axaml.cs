@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -91,4 +92,47 @@ public partial class GalleryView : UserControl
     {
         GalleryListBox.Focus();
     }
+
+    #region Context Menu
+
+    private void ContextOpen_Click(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel?.SelectedItem is not null && !ViewModel.SelectedItem.IsFolder)
+            ViewModel.EnterFullscreen();
+    }
+
+    private void ContextRate1_Click(object? sender, RoutedEventArgs e) => ViewModel?.SetRatingCommand.Execute("1");
+    private void ContextRate2_Click(object? sender, RoutedEventArgs e) => ViewModel?.SetRatingCommand.Execute("2");
+    private void ContextRate3_Click(object? sender, RoutedEventArgs e) => ViewModel?.SetRatingCommand.Execute("3");
+    private void ContextRate4_Click(object? sender, RoutedEventArgs e) => ViewModel?.SetRatingCommand.Execute("4");
+    private void ContextRate5_Click(object? sender, RoutedEventArgs e) => ViewModel?.SetRatingCommand.Execute("5");
+    private void ContextRate0_Click(object? sender, RoutedEventArgs e) => ViewModel?.SetRatingCommand.Execute("0");
+
+    private void ContextToggleTag_Click(object? sender, RoutedEventArgs e) =>
+        ViewModel?.ToggleTagCommand.Execute(null);
+
+    private void ContextShowInExplorer_Click(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel?.SelectedItem is null) return;
+        var path = ViewModel.SelectedItem.FilePath;
+
+        try
+        {
+            if (OperatingSystem.IsWindows())
+                Process.Start("explorer.exe", $"/select,\"{path}\"");
+            else if (OperatingSystem.IsMacOS())
+                Process.Start("open", $"-R \"{path}\"");
+            else if (OperatingSystem.IsLinux())
+                Process.Start("xdg-open", $"\"{Path.GetDirectoryName(path)}\"");
+        }
+        catch { }
+    }
+
+    private void ContextRefreshThumb_Click(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel?.SelectedItem is not null)
+            ViewModel.RefreshThumbnail(ViewModel.SelectedItem);
+    }
+
+    #endregion
 }

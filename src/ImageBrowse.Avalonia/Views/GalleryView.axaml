@@ -36,6 +36,26 @@
                  DoubleTapped="GalleryListBox_DoubleTapped"
                  KeyDown="GalleryListBox_KeyDown">
 
+            <ListBox.ContextMenu>
+                <ContextMenu x:Name="GalleryContextMenu">
+                    <MenuItem Header="Open in Fullscreen" Click="ContextOpen_Click" />
+                    <Separator />
+                    <MenuItem Header="Rate">
+                        <MenuItem Header="★ 1" Click="ContextRate1_Click" />
+                        <MenuItem Header="★★ 2" Click="ContextRate2_Click" />
+                        <MenuItem Header="★★★ 3" Click="ContextRate3_Click" />
+                        <MenuItem Header="★★★★ 4" Click="ContextRate4_Click" />
+                        <MenuItem Header="★★★★★ 5" Click="ContextRate5_Click" />
+                        <Separator />
+                        <MenuItem Header="Clear Rating" Click="ContextRate0_Click" />
+                    </MenuItem>
+                    <MenuItem Header="Toggle Tag" Click="ContextToggleTag_Click" />
+                    <Separator />
+                    <MenuItem Header="Show in File Manager" Click="ContextShowInExplorer_Click" />
+                    <MenuItem Header="Refresh Thumbnail" Click="ContextRefreshThumb_Click" />
+                </ContextMenu>
+            </ListBox.ContextMenu>
+
             <ListBox.ItemsPanel>
                 <ItemsPanelTemplate>
                     <WrapPanel Orientation="Horizontal" />

@@ -97,6 +97,8 @@
                             Command="{Binding ToggleThemeCommand}" Padding="8,4" FontSize="16" />
                     <Button Content="⚙" ToolTip.Tip="Settings (Ctrl+,)"
                             Click="SettingsButton_Click" Padding="8,4" FontSize="16" />
+                    <Button Content="ℹ" ToolTip.Tip="About (F1)"
+                            Click="AboutButton_Click" Padding="8,4" FontSize="16" />
                 </StackPanel>
             </Grid>
         </Border>

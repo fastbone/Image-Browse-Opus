@@ -1,0 +1,30 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ImageBrowse.Views.AboutDialog"
+        Title="About Image Browse"
+        Width="400" Height="300"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ShowInTaskbar="False"
+        KeyDown="Window_KeyDown">
+
+    <Grid Margin="24" RowDefinitions="*,Auto">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+            <TextBlock Text="🖼" FontSize="48" HorizontalAlignment="Center" />
+            <TextBlock Text="Image Browse" FontSize="24" FontWeight="Bold"
+                       HorizontalAlignment="Center" />
+            <TextBlock x:Name="VersionText" FontSize="13"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="Cross-platform image browser" FontSize="13"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                       HorizontalAlignment="Center" Margin="0,4,0,0" />
+            <TextBlock Text="Built with Avalonia UI and .NET 10" FontSize="12"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                       HorizontalAlignment="Center" />
+        </StackPanel>
+
+        <Button Grid.Row="1" Content="Close" Width="90" Padding="12,8"
+                HorizontalAlignment="Center" Click="Close_Click" />
+    </Grid>
+</Window>

@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ImageBrowse.Views.UpdatePromptDialog"
+        Title="Update Available"
+        Width="420" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ShowInTaskbar="False"
+        KeyDown="Window_KeyDown">
+
+    <Grid Margin="24" RowDefinitions="Auto,Auto,Auto">
+        <TextBlock Grid.Row="0" Text="Update Available" FontSize="20" FontWeight="SemiBold"
+                   Margin="0,0,0,16" />
+
+        <Border Grid.Row="1" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                CornerRadius="8" Padding="16" Margin="0,0,0,20">
+            <TextBlock x:Name="MessageText" TextWrapping="Wrap" FontSize="13" />
+        </Border>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Content="Ignore" Width="80" Padding="8,8" Click="Ignore_Click" />
+            <Button Content="Install on Close" Width="120" Padding="8,8" Click="InstallOnClose_Click" />
+            <Button Content="Install Now" Width="100" Padding="12,8" Click="InstallNow_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

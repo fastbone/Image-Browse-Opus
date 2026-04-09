@@ -211,6 +211,7 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
+      # Linux: no VideoLAN.LibVLC.Linux on NuGet — app uses system libvlc (see README + deb/rpm depends).
       - name: Publish application
         run: >
           dotnet publish src/ImageBrowse.Avalonia/ImageBrowse.Avalonia.csproj

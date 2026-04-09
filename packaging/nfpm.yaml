@@ -5,6 +5,13 @@ maintainer: "fastbone"
 description: "A fast, cross-platform image browser"
 license: GPL-3.0-only
 homepage: "https://github.com/fastbone/Image-Browse-Opus"
+# Video playback uses LibVLC; there is no VideoLAN.LibVLC.Linux NuGet — runtime needs VLC/libvlc.
+deb:
+  depends:
+    - libvlc5
+rpm:
+  depends:
+    - vlc-libs
 contents:
   - src: ./publish/
     dst: /opt/imagebrowse/

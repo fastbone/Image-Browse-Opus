@@ -719,6 +719,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public event Action? FolderTreeRefreshRequested;
 
+    public void RequestFolderTreeRefresh() => FolderTreeRefreshRequested?.Invoke();
+
     public void RenameItem(ImageItem item, string newName)
     {
         string oldPath = item.FilePath;

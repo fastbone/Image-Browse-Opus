@@ -20,10 +20,17 @@
             <TextBlock Text="Cross-platform image browser (Avalonia)" FontSize="13"
                        Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                        HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
-            <TextBlock Text="Shared Image Browse core with Magick.NET, MetadataExtractor, CommunityToolkit.Mvvm, and Microsoft.Data.Sqlite. This build does not ship LibVLC or Velopack."
+            <TextBlock Text="Shared Image Browse core with Magick.NET, MetadataExtractor, CommunityToolkit.Mvvm, Microsoft.Data.Sqlite, LibVLCSharp (video), and Velopack (updates where the platform supports it)."
                        FontSize="12"
                        Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                        TextWrapping="Wrap" TextAlignment="Center" />
+
+            <TextBlock x:Name="UpdateStatusText" Text="" FontSize="11"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                       TextWrapping="Wrap" TextAlignment="Center" IsVisible="False" />
+
+            <Button x:Name="CheckUpdatesButton" Margin="0,4,0,0" Content="Check for updates"
+                    Padding="12,8" HorizontalAlignment="Center" Click="CheckUpdates_Click" />
 
             <StackPanel Spacing="4" Margin="0,8,0,0">
                 <TextBlock Text="Project site" FontSize="12" FontWeight="SemiBold"

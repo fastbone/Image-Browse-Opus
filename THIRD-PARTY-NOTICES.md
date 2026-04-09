@@ -8,9 +8,9 @@ GNU General Public License v3.0 under which Image Browse is distributed.
 
 **Which build uses what**
 
-- **ImageBrowse.Core** (referenced by every UI host): CommunityToolkit.Mvvm, Magick.NET, MetadataExtractor, Microsoft.Data.Sqlite, Velopack (Velopack is exercised for auto-updates in the **Windows WPF** application).
+- **ImageBrowse.Core** (referenced by every UI host): CommunityToolkit.Mvvm, Magick.NET, MetadataExtractor, Microsoft.Data.Sqlite, Velopack (update checks / apply flows are used from both WPF and Avalonia where packaging supports it).
 - **Windows WPF** (`src/ImageBrowse`): additionally LibVLCSharp, LibVLCSharp.WPF, VideoLAN.LibVLC.Windows, VirtualizingWrapPanel.
-- **macOS / Linux Avalonia** (`src/ImageBrowse.Avalonia`): additionally Avalonia UI packages listed under [Avalonia UI](#avalonia-ui).
+- **macOS / Linux Avalonia** (`src/ImageBrowse.Avalonia`): additionally Avalonia UI packages under [Avalonia UI](#avalonia-ui), plus LibVLCSharp, LibVLCSharp.Avalonia, VideoLAN.LibVLC.Mac (macOS publish), VideoLAN.LibVLC.Windows (optional cross-publish). **Linux** relies on system **libvlc** when not bundling VideoLAN native packages.
 
 ---
 
@@ -66,9 +66,10 @@ SOFTWARE.
 
 ---
 
-## LibVLCSharp / LibVLCSharp.WPF
+## LibVLCSharp / LibVLCSharp.WPF / LibVLCSharp.Avalonia
 
-Used only in the **Windows WPF** build.
+- **WPF**: LibVLCSharp + LibVLCSharp.WPF + VideoLAN.LibVLC.Windows.
+- **Avalonia**: LibVLCSharp + LibVLCSharp.Avalonia + VideoLAN.LibVLC.Mac (and optionally VideoLAN.LibVLC.Windows). Linux deployments typically use distro **libvlc** with LibVLCSharp.
 
 - **Version**: 3.9.6
 - **Authors**: VideoLAN

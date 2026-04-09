@@ -8,7 +8,8 @@
         Width="1400" Height="900"
         MinWidth="800" MinHeight="500"
         WindowStartupLocation="CenterScreen"
-        KeyDown="Window_KeyDown">
+        KeyDown="Window_KeyDown"
+        Closing="MainWindow_Closing">
 
     <DockPanel>
         <!-- TOOLBAR -->
@@ -39,37 +40,61 @@
                 <Border Grid.Column="3" Width="1" Margin="6,4"
                         Background="{DynamicResource SystemControlForegroundBaseLowBrush}" />
 
-                <!-- Address bar -->
+                <!-- Breadcrumb / address -->
                 <Grid Grid.Column="4" Margin="4,0" ColumnDefinitions="Auto,*">
                     <TextBlock Grid.Column="0" Text="📂" FontSize="13" VerticalAlignment="Center"
                                Margin="0,0,6,0" />
-                    <TextBox Grid.Column="1" x:Name="AddressBar"
-                             Text="{Binding CurrentPath, Mode=TwoWay}"
-                             VerticalContentAlignment="Center"
-                             KeyDown="AddressBar_KeyDown" />
+                    <Panel Grid.Column="1">
+                        <Border x:Name="BreadcrumbBar" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                                CornerRadius="6" Padding="6,4" Cursor="Hand"
+                                PointerPressed="BreadcrumbBar_PointerPressed">
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                          MaxHeight="28">
+                                <StackPanel x:Name="BreadcrumbPanel" Orientation="Horizontal" Spacing="4" />
+                            </ScrollViewer>
+                        </Border>
+                        <TextBox x:Name="AddressBar" IsVisible="False"
+                                 Text="{Binding CurrentPath, Mode=TwoWay}"
+                                 VerticalContentAlignment="Center"
+                                 KeyDown="AddressBar_KeyDown" />
+                    </Panel>
                 </Grid>
 
                 <Border Grid.Column="5" Width="1" Margin="6,4"
                         Background="{DynamicResource SystemControlForegroundBaseLowBrush}" />
 
-                <!-- Sort controls -->
+                <!-- Sort controls (segmented, WPF-style) -->
                 <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="4"
                             VerticalAlignment="Center" Margin="4,0">
                     <TextBlock Text="Sort:" VerticalAlignment="Center" FontSize="12"
                                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-                    <ComboBox x:Name="SortFieldCombo" SelectedIndex="0" Width="120"
-                              SelectionChanged="SortFieldCombo_SelectionChanged">
-                        <ComboBoxItem Content="Name" Tag="{x:Static models:SortField.FileName}" />
-                        <ComboBoxItem Content="Modified" Tag="{x:Static models:SortField.DateModified}" />
-                        <ComboBoxItem Content="Created" Tag="{x:Static models:SortField.DateCreated}" />
-                        <ComboBoxItem Content="Taken" Tag="{x:Static models:SortField.DateTaken}" />
-                        <ComboBoxItem Content="Size" Tag="{x:Static models:SortField.FileSize}" />
-                        <ComboBoxItem Content="Dims" Tag="{x:Static models:SortField.Dimensions}" />
-                        <ComboBoxItem Content="Type" Tag="{x:Static models:SortField.FileType}" />
-                        <ComboBoxItem Content="Rating" Tag="{x:Static models:SortField.Rating}" />
-                    </ComboBox>
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                  MaxWidth="380">
+                        <StackPanel x:Name="SortSegments" Orientation="Horizontal" Spacing="2"
+                                    VerticalAlignment="Center">
+                            <RadioButton Content="Name" Tag="{x:Static models:SortField.FileName}"
+                                         GroupName="SortField" IsChecked="True" Click="SortSegment_Click"
+                                         Padding="6,3" FontSize="11" />
+                            <RadioButton Content="Modified" Tag="{x:Static models:SortField.DateModified}"
+                                         GroupName="SortField" Click="SortSegment_Click" Padding="6,3" FontSize="11" />
+                            <RadioButton Content="Created" Tag="{x:Static models:SortField.DateCreated}"
+                                         GroupName="SortField" Click="SortSegment_Click" Padding="6,3" FontSize="11" />
+                            <RadioButton Content="Taken" Tag="{x:Static models:SortField.DateTaken}"
+                                         GroupName="SortField" Click="SortSegment_Click" Padding="6,3" FontSize="11" />
+                            <RadioButton Content="Size" Tag="{x:Static models:SortField.FileSize}"
+                                         GroupName="SortField" Click="SortSegment_Click" Padding="6,3" FontSize="11" />
+                            <RadioButton Content="Dims" Tag="{x:Static models:SortField.Dimensions}"
+                                         GroupName="SortField" Click="SortSegment_Click" Padding="6,3" FontSize="11" />
+                            <RadioButton Content="Type" Tag="{x:Static models:SortField.FileType}"
+                                         GroupName="SortField" Click="SortSegment_Click" Padding="6,3" FontSize="11" />
+                            <RadioButton Content="Rating" Tag="{x:Static models:SortField.Rating}"
+                                         GroupName="SortField" Click="SortSegment_Click" Padding="6,3" FontSize="11" />
+                        </StackPanel>
+                    </ScrollViewer>
                     <Button x:Name="SortDirButton" Content="↓" ToolTip.Tip="Toggle Sort Direction"
                             Command="{Binding ToggleSortDirectionCommand}" Padding="8,4" FontSize="14" />
+                    <Button x:Name="ResetSortButton" Content="↺" ToolTip.Tip="Reset folder sort to defaults"
+                            Click="ResetSortButton_Click" Padding="6,4" FontSize="12" IsVisible="False" />
                 </StackPanel>
 
                 <Border Grid.Column="7" Width="1" Margin="6,4"
@@ -93,6 +118,8 @@
 
                 <!-- Action buttons -->
                 <StackPanel Grid.Column="10" Orientation="Horizontal" Spacing="2" Margin="4,0">
+                    <Button Content="⏱" ToolTip.Tip="Prescan Folder (Ctrl+Shift+P)"
+                            Click="PrescanButton_Click" Padding="8,4" FontSize="16" />
                     <Button Content="🌓" ToolTip.Tip="Toggle Theme (Ctrl+T)"
                             Command="{Binding ToggleThemeCommand}" Padding="8,4" FontSize="16" />
                     <Button Content="⚙" ToolTip.Tip="Settings (Ctrl+,)"
@@ -107,7 +134,7 @@
         <Border DockPanel.Dock="Bottom" Padding="8,4"
                 BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
                 BorderThickness="0,1,0,0">
-            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto">
                 <TextBlock Grid.Column="0" Text="{Binding StatusText}" FontSize="12"
                            VerticalAlignment="Center" />
                 <TextBlock Grid.Column="1" x:Name="SelectionCountText" FontSize="12"
@@ -116,7 +143,10 @@
                 <TextBlock Grid.Column="2" Text="{Binding SelectedItemInfo}" FontSize="12"
                            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                            VerticalAlignment="Center" Margin="12,0,0,0" />
-                <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock x:Name="UpdateNotification" Grid.Column="3" FontSize="12"
+                           Foreground="#4CAF50" VerticalAlignment="Center" Margin="12,0,0,0"
+                           IsVisible="False" />
+                <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Right">
                     <TextBlock Text="{Binding ThumbnailLoadProgress}" FontSize="12"
                                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                                VerticalAlignment="Center" Margin="8,0" />
@@ -142,7 +172,15 @@
             <!-- Folder tree -->
             <TreeView x:Name="FolderTree" Grid.Column="0"
                       SelectionChanged="FolderTree_SelectionChanged"
-                      Padding="2" FontSize="13" />
+                      Padding="2" FontSize="13">
+                <TreeView.ContextFlyout>
+                    <MenuFlyout>
+                        <MenuItem Header="New Folder" Click="TreeNewFolder_Click" />
+                        <MenuItem Header="Rename" Click="TreeRename_Click" />
+                        <MenuItem Header="Delete" Click="TreeDelete_Click" />
+                    </MenuFlyout>
+                </TreeView.ContextFlyout>
+            </TreeView>
 
             <!-- Splitter -->
             <GridSplitter Grid.Column="1" Width="4" Background="Transparent"

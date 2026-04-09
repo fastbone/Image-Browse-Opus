@@ -1,5 +1,3 @@
-using MetadataExtractor;
-using MetadataExtractor.Formats.Exif;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -7,18 +5,7 @@ namespace ImageBrowse.Services;
 
 public static class ExifOrientationService
 {
-    public static int ReadOrientation(string filePath)
-    {
-        try
-        {
-            var directories = ImageMetadataReader.ReadMetadata(filePath);
-            var ifd0 = directories.OfType<ExifIfd0Directory>().FirstOrDefault();
-            if (ifd0 is not null && ifd0.TryGetInt32(ExifDirectoryBase.TagOrientation, out int orientation))
-                return orientation;
-        }
-        catch { }
-        return 1;
-    }
+    public static int ReadOrientation(string filePath) => ExifOrientationReader.ReadOrientation(filePath);
 
     public static BitmapSource ApplyOrientation(BitmapSource source, int orientation)
     {

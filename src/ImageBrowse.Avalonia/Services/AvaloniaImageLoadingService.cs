@@ -12,6 +12,9 @@ public sealed class AvaloniaImageLoadingService : IImageLoadingService
         try
         {
             var ext = Path.GetExtension(filePath);
+            if (IsJpegFamily(ext) && ExifOrientationReader.ReadOrientation(filePath) > 1)
+                return LoadWithMagick(filePath, maxDimension);
+
             if (IsAvaloniaSupported(ext))
                 return LoadNative(filePath, maxDimension);
 
@@ -23,15 +26,20 @@ public sealed class AvaloniaImageLoadingService : IImageLoadingService
         }
     }
 
+    private static bool IsJpegFamily(string ext) =>
+        ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+        || ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
+        || ext.Equals(".jfif", StringComparison.OrdinalIgnoreCase);
+
     private static bool IsAvaloniaSupported(string ext)
     {
-        return ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
-            || ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
+        return IsJpegFamily(ext)
             || ext.Equals(".png", StringComparison.OrdinalIgnoreCase)
             || ext.Equals(".bmp", StringComparison.OrdinalIgnoreCase)
             || ext.Equals(".gif", StringComparison.OrdinalIgnoreCase)
             || ext.Equals(".ico", StringComparison.OrdinalIgnoreCase)
-            || ext.Equals(".jfif", StringComparison.OrdinalIgnoreCase);
+            || ext.Equals(".tif", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".tiff", StringComparison.OrdinalIgnoreCase);
     }
 
     private static Bitmap? LoadNative(string filePath, int maxDimension)

@@ -10,11 +10,11 @@ A lightweight, fast desktop image and video browser built with .NET 10. **Window
 
 ## Overview
 
-Image Browse is a desktop application for browsing and viewing images (and videos on Windows). It combines folder-based navigation, a high-performance virtualized thumbnail gallery, and a fullscreen media viewer. **Magick.NET** (ImageMagick) powers broad image format support on every platform. On **Windows**, **LibVLC** adds integrated video playback and video thumbnails. The app supports over 80 image formats and, on Windows, 16 video formats out of the box—from everyday JPEGs and PNGs to camera RAW, HEIC, AVIF, JPEG XL, PSD, SVG, HDR, and more, plus video files like MP4, MKV, and MOV where playback is available.
+Image Browse is a desktop application for browsing and viewing images and videos. It combines folder-based navigation, a high-performance thumbnail gallery (virtualized on Windows WPF; Avalonia uses a wrap layout with aggressive visible-range thumbnail loading), and a fullscreen media viewer. **Magick.NET** (ImageMagick) powers broad image format support on every platform. **LibVLC** adds integrated video playback and video thumbnails on **Windows** and **macOS** Avalonia builds; **Linux** Avalonia builds expect a system **libvlc** installation (plugins on `LD_LIBRARY_PATH` or distro packages) because a NuGet-native Linux transport is not bundled here. The app supports over 80 image formats and common video containers where LibVLC is available.
 
 ### Platform note
 
-**Windows (WPF)** is the primary build: LibVLC video playback, video thumbnails, folder tree with drives, **Velopack** auto-updates, and WPF-native fast decoding for common image types. **macOS** and **Linux** builds use **Avalonia** and share **ImageBrowse.Core**—gallery, image viewing, ratings, tags, cache, and the same format breadth via Magick.NET. Video thumbnails and in-app video playback are **not** at parity on Avalonia yet; video UX there is still evolving.
+**Windows (WPF)** is the primary build: LibVLC video, virtualized gallery, **Velopack** auto-updates, and WPF-native fast decoding for common image types. **macOS** and **Linux** use **Avalonia** with the same **ImageBrowse.Core** (gallery, fullscreen, ratings, tags, SQLite cache, prescan, file operations, breadcrumbs, startup paths, update checks, LibVLC on macOS and when `libvlc` is present on Linux). Optional Linux/macOS file associations are documented under [`docs/unix-file-associations.md`](docs/unix-file-associations.md).
 
 ---
 
@@ -29,6 +29,11 @@ Official builds are published on [GitHub Releases](https://github.com/fastbone/I
 | **macOS** (Intel) | `ImageBrowse-{version}-macos-x64.dmg` | Same as above |
 | **Linux** (x64) | `.deb`, `.rpm`, or `ImageBrowse-{version}-linux-x64.tar.gz` | Install with `dpkg` / `rpm`, or extract the archive and run the published executable |
 
+### Distribution notes (Avalonia on Linux and macOS)
+
+- **Linux / LibVLC**: There is **no** `VideoLAN.LibVLC.Linux` package on NuGet. Published **`.deb` / `.rpm`** artifacts declare **`libvlc5`** (Debian/Ubuntu) or **`vlc-libs`** (RPM) so the app can load system VLC. Plain **`.tar.gz`** users should install **`vlc`** or **`libvlc`** from their distro, or video playback and thumbnails may not work.
+- **macOS / signing**: Release **DMG** builds are fine for local use. To distribute broadly outside the Mac App Store, maintainers usually **code sign** the app bundle and pass **Apple notarization** so Gatekeeper allows the app on other machines. This repo does not automate signing or notarization.
+
 ---
 
 ## Features
@@ -39,7 +44,7 @@ Official builds are published on [GitHub Releases](https://github.com/fastbone/I
 - **Back / Forward / Up** navigation with full history
 
 ### Thumbnail Gallery
-- **Virtualized wrap panel** for smooth scrolling through thousands of items
+- **Virtualized grid** (`ItemsRepeater` + uniform wrap-style layout) for smooth scrolling through large folders
 - **Adjustable thumbnail size** from 80px to 400px (step of 40px)
 - Mixed display of folders and images; folder tiles show image counts and composite previews
 - **Extended selection** support
@@ -52,8 +57,8 @@ Official builds are published on [GitHub Releases](https://github.com/fastbone/I
 - **Filmstrip** thumbnail strip for quick navigation between images (toggle pin with `T`)
 - Auto-hiding cursor and position/zoom indicators
 
-### Video Playback (Windows)
-- **Integrated video player** powered by LibVLC for broad codec support (Windows WPF build)
+### Video Playback (LibVLC)
+- **Integrated video player** powered by LibVLC on **Windows (WPF)** and **Avalonia (macOS; Linux with system libvlc)**
 - **Playback controls**: play/pause, seek (5s or 30s jumps), volume, mute
 - **Playback speed adjustment** with `[` and `]` keys (0.25x to 4x)
 - **Video zoom** with mini-map for interactive navigation
@@ -88,13 +93,13 @@ Official builds are published on [GitHub Releases](https://github.com/fastbone/I
 
 ### Updates
 - **Windows**: **Automatic update checking** via Velopack and GitHub Releases; manual check in the About dialog
-- **macOS / Linux**: install newer releases from GitHub as they are published
+- **macOS / Linux**: **Velopack**-backed update flow is shared via Core when releases support the platform; otherwise install newer builds from GitHub Releases
 
 ---
 
 ## Supported Formats
 
-Image Browse supports over **80 image formats** on all platforms (via Magick.NET and, on Windows, WPF fast paths for common types). **16 video formats** are supported for **playback and video thumbnails on Windows** (LibVLC). Other platforms may list video files in the gallery; full in-app playback and video thumbnails are still evolving there.
+Image Browse supports over **80 image formats** on all platforms (via Magick.NET and native fast paths where available). **Video** playback and **video thumbnails** use LibVLC on Windows (WPF), on Avalonia **macOS** (bundled native libs via NuGet), and on Avalonia **Linux** when VLC/`libvlc` is installed and discoverable by LibVLC.
 
 ### Common Raster
 `.jpg` `.jpeg` `.jfif` `.png` `.gif` `.bmp` `.tiff` `.tif` `.ico` `.cur`

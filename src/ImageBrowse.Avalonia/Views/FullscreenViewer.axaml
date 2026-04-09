@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:models="clr-namespace:ImageBrowse.Models;assembly=ImageBrowse.Core"
         xmlns:helpers="clr-namespace:ImageBrowse.Helpers"
+        xmlns:vlc="clr-namespace:LibVLCSharp.Avalonia;assembly=LibVLCSharp.Avalonia"
         x:Class="ImageBrowse.Views.FullscreenViewer"
         x:CompileBindings="False"
         Title="Image Viewer"
@@ -26,6 +27,17 @@
                       PointerReleased="ImageScroller_PointerReleased"
                       PointerMoved="ImageScroller_PointerMoved">
             <Panel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Image x:Name="BackImage"
+                       Stretch="Uniform"
+                       MaxWidth="{Binding $parent[Window].Bounds.Width}"
+                       MaxHeight="{Binding $parent[Window].Bounds.Height}"
+                       RenderTransformOrigin="0.5,0.5"
+                       IsHitTestVisible="False"
+                       Opacity="0">
+                    <Image.RenderTransform>
+                        <ScaleTransform ScaleX="1" ScaleY="1" />
+                    </Image.RenderTransform>
+                </Image>
                 <Image x:Name="DisplayImage"
                        Stretch="Uniform"
                        MaxWidth="{Binding $parent[Window].Bounds.Width}"
@@ -38,8 +50,52 @@
             </Panel>
         </ScrollViewer>
 
+        <vlc:VideoView x:Name="VideoView" IsVisible="False"
+                       HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                       ZIndex="1">
+            <Panel Background="Transparent">
+                <Border x:Name="VideoControlBar" Opacity="0" IsHitTestVisible="True"
+                        Background="#CC000000" VerticalAlignment="Bottom"
+                        Height="52" Padding="12,6" ZIndex="2">
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto">
+                        <Button x:Name="PlayPauseButton" Grid.Column="0" Content="Pause" Padding="8,4"
+                                Click="PlayPause_Click" />
+                        <TextBlock x:Name="VideoTimeText" Grid.Column="1" Text="0:00" Foreground="#CCC"
+                                   VerticalAlignment="Center" Margin="10,0" MinWidth="40" />
+                        <Slider x:Name="VideoSeekBar" Grid.Column="2" Minimum="0" Maximum="1000"
+                                VerticalAlignment="Center" Margin="4,0"
+                                PointerPressed="VideoSeekBar_PointerPressed"
+                                PointerReleased="VideoSeekBar_PointerReleased"
+                                ValueChanged="VideoSeekBar_ValueChanged" />
+                        <TextBlock x:Name="VideoDurationText" Grid.Column="3" Text="0:00" Foreground="#CCC"
+                                   VerticalAlignment="Center" Margin="10,0" MinWidth="40" />
+                        <TextBlock x:Name="SpeedText" Grid.Column="4" Text="1.0x" Foreground="#CCC"
+                                   VerticalAlignment="Center" Margin="8,0" MinWidth="36" />
+                        <TextBlock Grid.Column="5" Text="Vol" Foreground="#AAA" VerticalAlignment="Center" Margin="8,0,4,0" />
+                        <Slider x:Name="VolumeSlider" Grid.Column="6" Width="100" Minimum="0" Maximum="100" Value="100"
+                                VerticalAlignment="Center"
+                                ValueChanged="VolumeSlider_ValueChanged" />
+                    </Grid>
+                </Border>
+
+                <Border x:Name="VideoMiniMapPanel" IsVisible="False" Background="#AA000000" CornerRadius="8"
+                        Width="200" Height="130" Padding="4" Margin="16,16,0,0"
+                        HorizontalAlignment="Left" VerticalAlignment="Top" Cursor="Hand" ZIndex="3"
+                        PointerPressed="VideoMiniMap_PointerPressed"
+                        PointerMoved="VideoMiniMap_PointerMoved"
+                        PointerReleased="VideoMiniMap_PointerReleased">
+                    <Canvas x:Name="VideoMiniMapCanvas" ClipToBounds="True">
+                        <Image x:Name="VideoMiniMapImage" Stretch="Uniform" />
+                        <Rectangle x:Name="VideoMiniMapViewport" Stroke="#CCFFFFFF" StrokeThickness="1.5"
+                                   Fill="#22FFFFFF" />
+                    </Canvas>
+                </Border>
+            </Panel>
+        </vlc:VideoView>
+
         <!-- Left nav hover zone -->
         <Border x:Name="NavLeft" Width="120" HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                ZIndex="2"
                 Background="Transparent" Opacity="0" IsHitTestVisible="True" Cursor="Hand"
                 PointerEntered="NavLeft_PointerEntered" PointerExited="NavZone_PointerExited"
                 PointerPressed="NavLeft_PointerPressed">
@@ -49,6 +105,7 @@
 
         <!-- Right nav hover zone -->
         <Border x:Name="NavRight" Width="120" HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                ZIndex="2"
                 Background="Transparent" Opacity="0" IsHitTestVisible="True" Cursor="Hand"
                 PointerEntered="NavRight_PointerEntered" PointerExited="NavZone_PointerExited"
                 PointerPressed="NavRight_PointerPressed">

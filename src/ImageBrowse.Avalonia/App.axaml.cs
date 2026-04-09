@@ -6,6 +6,7 @@ using ImageBrowse.Services;
 using ImageBrowse.Services.Abstractions;
 using ImageBrowse.ViewModels;
 using ImageBrowse.Views;
+using LibVLCSharp.Shared;
 
 namespace ImageBrowse;
 
@@ -18,6 +19,8 @@ public class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        Core.Initialize();
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var db = new DatabaseService();
@@ -33,7 +36,9 @@ public class App : Application
                 new AvaloniaDispatcherService(),
                 ManagedNaturalSortComparer.Instance);
 
-            desktop.MainWindow = new MainWindow(vm);
+            var cliArgs = desktop.Args ?? [];
+            string? startupPath = cliArgs.Length > 0 ? cliArgs[0] : null;
+            desktop.MainWindow = new MainWindow(vm, startupPath);
         }
 
         base.OnFrameworkInitializationCompleted();

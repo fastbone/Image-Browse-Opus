@@ -5,6 +5,7 @@ using Avalonia.Media.Imaging;
 using ImageBrowse.Services.Abstractions;
 using ImageMagick;
 using ImageMagick.Formats;
+using LibVLCSharp.Shared;
 
 namespace ImageBrowse.Services;
 
@@ -14,6 +15,8 @@ public sealed class AvaloniaThumbnailService : IThumbnailService
     private readonly ConcurrentDictionary<string, byte> _inProgress = new();
     private readonly SemaphoreSlim _semaphore;
     private CancellationTokenSource _cts = new();
+    private LibVLC? _videoLibVlc;
+    private readonly object _videoLibLock = new();
     private const int ThumbnailSize = 256;
 
     private static readonly FrozenSet<string> RawExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -30,9 +33,7 @@ public sealed class AvaloniaThumbnailService : IThumbnailService
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     public event Action<string, object, int, int>? ThumbnailReady;
-#pragma warning disable CS0067 // Video thumbnails not implemented on Avalonia yet; required by IThumbnailService (see WPF ThumbnailService.GenerateVideoThumbnail).
     public event Action<string, object, int, int, TimeSpan>? VideoThumbnailReady;
-#pragma warning restore CS0067
     public event Action<string>? ThumbnailFailed;
 
     public AvaloniaThumbnailService(DatabaseService db)
@@ -91,7 +92,7 @@ public sealed class AvaloniaThumbnailService : IThumbnailService
         {
             if (SupportedFormats.IsVideoFile(filePath))
             {
-                ThumbnailFailed?.Invoke(filePath);
+                GenerateVideoThumbnail(filePath, lastModified, fileSize);
                 return;
             }
 
@@ -136,6 +137,37 @@ public sealed class AvaloniaThumbnailService : IThumbnailService
             using var stream = new MemoryStream(thumbnailData);
             var bitmap = new Bitmap(stream);
             ThumbnailReady?.Invoke(filePath, bitmap, width, height);
+        }
+        catch
+        {
+            ThumbnailFailed?.Invoke(filePath);
+        }
+    }
+
+    private void GenerateVideoThumbnail(string filePath, DateTime lastModified, long fileSize)
+    {
+        try
+        {
+            LibVLC vlc;
+            lock (_videoLibLock)
+            {
+                _videoLibVlc ??= new LibVLC(AvaloniaVideoThumbnailHelper.LibVlcThumbnailArgs());
+                vlc = _videoLibVlc;
+            }
+
+            var result = AvaloniaVideoThumbnailHelper.GenerateThumbnail(vlc, filePath);
+            if (result is null)
+            {
+                ThumbnailFailed?.Invoke(filePath);
+                return;
+            }
+
+            var (data, width, height, duration) = result.Value;
+            _db.SaveThumbnail(filePath, lastModified, fileSize, data, width, height, null);
+
+            using var stream = new MemoryStream(data);
+            var bitmap = new Bitmap(stream);
+            VideoThumbnailReady?.Invoke(filePath, bitmap, width, height, duration);
         }
         catch
         {
@@ -234,5 +266,10 @@ public sealed class AvaloniaThumbnailService : IThumbnailService
         _cts.Cancel();
         _cts.Dispose();
         _semaphore.Dispose();
+        lock (_videoLibLock)
+        {
+            _videoLibVlc?.Dispose();
+            _videoLibVlc = null;
+        }
     }
 }

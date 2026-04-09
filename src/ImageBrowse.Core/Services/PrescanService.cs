@@ -1,6 +1,5 @@
 using System.Collections.Frozen;
 using System.IO;
-using System.Windows.Media.Imaging;
 using ImageMagick;
 using ImageMagick.Formats;
 
@@ -25,11 +24,6 @@ public sealed class PrescanService
         ".orf", ".raf", ".rw2", ".rwl", ".pef", ".dng", ".mrw", ".x3f",
         ".srw", ".3fr", ".dcr", ".kdc", ".erf", ".mos", ".mef",
         ".raw", ".bay", ".cap", ".iiq", ".ptx"
-    }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
-
-    private static readonly FrozenSet<string> WpfNativeExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".tif", ".ico", ".jfif"
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     private static readonly FrozenSet<string> JpegExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -167,10 +161,6 @@ public sealed class PrescanService
                 if (thumbnailData.Length == 0)
                     (thumbnailData, width, height) = GenerateWithMagick(filePath);
             }
-            else if (WpfNativeExtensions.Contains(ext))
-            {
-                (thumbnailData, width, height) = GenerateWithWpf(filePath);
-            }
             else
             {
                 (thumbnailData, width, height) = GenerateWithMagick(filePath);
@@ -226,36 +216,6 @@ public sealed class PrescanService
         catch { }
 
         return ([], 0, 0);
-    }
-
-    private static (byte[] Data, int Width, int Height) GenerateWithWpf(string filePath)
-    {
-        try
-        {
-            int orientation = ExifOrientationService.ReadOrientation(filePath);
-
-            var thumbnail = new BitmapImage();
-            thumbnail.BeginInit();
-            thumbnail.CacheOption = BitmapCacheOption.OnLoad;
-            thumbnail.UriSource = new Uri(filePath, UriKind.Absolute);
-            thumbnail.DecodePixelWidth = ThumbnailSize;
-            thumbnail.EndInit();
-            thumbnail.Freeze();
-
-            var oriented = ExifOrientationService.ApplyOrientation(thumbnail, orientation);
-            int origW = oriented.PixelWidth;
-            int origH = oriented.PixelHeight;
-
-            var encoder = new JpegBitmapEncoder { QualityLevel = 85 };
-            encoder.Frames.Add(BitmapFrame.Create(oriented));
-            using var ms = new MemoryStream();
-            encoder.Save(ms);
-            return (ms.ToArray(), origW, origH);
-        }
-        catch
-        {
-            return GenerateWithMagick(filePath);
-        }
     }
 
     private static (byte[] Data, int Width, int Height) GenerateWithMagick(string filePath)

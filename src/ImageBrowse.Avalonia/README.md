@@ -1,6 +1,6 @@
-# Image Browse (Avalonia)
+# Image Browse Opus (Avalonia)
 
-Cross-platform **macOS** and **Linux** UI for Image Browse. It references [ImageBrowse.Core](../ImageBrowse.Core/) for shared models, view models, and services.
+Cross-platform **macOS** and **Linux** UI for Image Browse Opus. It references [ImageBrowse.Core](../ImageBrowse.Core/) for shared models, view models, and services.
 
 The **Windows** app lives in [ImageBrowse](../ImageBrowse/) (WPF) and is the primary build for LibVLC video playback and Velopack updates.
 

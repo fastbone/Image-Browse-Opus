@@ -1,7 +1,8 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:branding="clr-namespace:ImageBrowse;assembly=ImageBrowse.Core"
         x:Class="ImageBrowse.Views.AboutDialog"
-        Title="About Image Browse"
+        Title="{x:Static branding:AppBranding.AboutDialogTitle}"
         Width="440" MinHeight="420" SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
@@ -12,7 +13,7 @@
                   VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="24" Spacing="10">
             <TextBlock Text="&#x1F5BC;" FontSize="48" HorizontalAlignment="Center" />
-            <TextBlock Text="Image Browse" FontSize="24" FontWeight="Bold"
+            <TextBlock Text="{x:Static branding:AppBranding.DisplayName}" FontSize="24" FontWeight="Bold"
                        HorizontalAlignment="Center" />
             <TextBlock x:Name="VersionText" FontSize="13"
                        Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
@@ -20,7 +21,7 @@
             <TextBlock Text="Cross-platform image browser (Avalonia)" FontSize="13"
                        Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                        HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
-            <TextBlock Text="Shared Image Browse core with Magick.NET, MetadataExtractor, CommunityToolkit.Mvvm, Microsoft.Data.Sqlite, LibVLCSharp (video), and Velopack (updates where the platform supports it)."
+            <TextBlock Text="Shared core (ImageBrowse.Core) with Magick.NET, MetadataExtractor, CommunityToolkit.Mvvm, Microsoft.Data.Sqlite, LibVLCSharp (video), and Velopack (updates where the platform supports it)."
                        FontSize="12"
                        Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                        TextWrapping="Wrap" TextAlignment="Center" />

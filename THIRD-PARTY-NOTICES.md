@@ -1,10 +1,10 @@
 # Third-Party Notices
 
-Image Browse incorporates third-party open-source software. The following
+Image Browse Opus incorporates third-party open-source software. The following
 notices are provided in compliance with the license terms of each component.
 
 All third-party licenses listed below are compatible with the
-GNU General Public License v3.0 under which Image Browse is distributed.
+GNU General Public License v3.0 under which Image Browse Opus is distributed.
 
 **Which build uses what**
 
@@ -125,7 +125,7 @@ Most of LibVLC is licensed under the GNU Lesser General Public License
 version 2.1 or later (LGPL-2.1+). Some modules and plugins within VLC are
 licensed under the GNU General Public License version 2.0 or later (GPL-2.0+).
 
-Since Image Browse is distributed under GPL-3.0, all LGPL-2.1+ and GPL-2.0+
+Since Image Browse Opus is distributed under GPL-3.0, all LGPL-2.1+ and GPL-2.0+
 components are compatible — the "or later" clause allows use under GPL-3.0.
 
 Full LGPL-2.1 text: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
@@ -632,7 +632,7 @@ See each package on https://www.nuget.org/ for the authoritative package metadat
 
 ## .NET Runtime
 
-Image Browse targets .NET 10.0, which is licensed under the MIT License by
+Image Browse Opus targets .NET 10.0, which is licensed under the MIT License by
 the .NET Foundation. See https://github.com/dotnet/runtime/blob/main/LICENSE.TXT
 for the full license text.
 
@@ -641,7 +641,7 @@ for the full license text.
 ## License Compatibility
 
 All third-party components listed above use open-source licenses that are
-compatible with the GNU General Public License v3.0 under which Image Browse
+compatible with the GNU General Public License v3.0 under which Image Browse Opus
 is distributed.
 
 - **MIT** -> GPL-3.0 compatible (permissive, no copyleft conflict)

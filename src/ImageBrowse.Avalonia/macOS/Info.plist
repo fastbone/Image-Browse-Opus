@@ -7,7 +7,9 @@
   <key>CFBundleIdentifier</key>
   <string>com.fastbone.imagebrowse</string>
   <key>CFBundleName</key>
-  <string>Image Browse</string>
+  <string>Image Browse Opus</string>
+  <key>CFBundleDisplayName</key>
+  <string>Image Browse Opus</string>
   <key>CFBundleVersion</key>
   <string>${VERSION}</string>
   <key>CFBundleShortVersionString</key>

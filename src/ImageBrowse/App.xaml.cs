@@ -11,7 +11,7 @@ public partial class App : Application
         DispatcherUnhandledException += (_, args) =>
         {
             MessageBox.Show($"An unexpected error occurred:\n\n{args.Exception.Message}",
-                "Image Browse - Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                $"{AppBranding.DisplayName} - Error", MessageBoxButton.OK, MessageBoxImage.Error);
             args.Handled = true;
         };
 

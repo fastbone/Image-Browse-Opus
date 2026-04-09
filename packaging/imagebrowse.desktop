@@ -1,5 +1,5 @@
 [Desktop Entry]
-Name=Image Browse
+Name=Image Browse Opus
 Exec=/opt/imagebrowse/ImageBrowse.Avalonia %F
 Icon=imagebrowse
 Type=Application

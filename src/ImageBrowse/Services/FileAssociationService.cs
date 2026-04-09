@@ -1,12 +1,13 @@
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using ImageBrowse;
 
 namespace ImageBrowse.Services;
 
 public static partial class FileAssociationService
 {
     private const string ProgId = "ImageBrowse.Image";
-    private const string AppName = "Image Browse";
+    private static string AppName => AppBranding.DisplayName;
     private const string AppDescription = "A lightweight, fast image browser for Windows";
     private const string CapabilitiesPath = @"Software\ImageBrowse\Capabilities";
     private const string DirShellKey = @"Software\Classes\Directory\shell\BrowseWithImageBrowse";

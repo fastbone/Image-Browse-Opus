@@ -46,7 +46,7 @@ jobs:
           dotnet tool install -g vpk
           vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} || true
           vpk pack --packId ImageBrowse --packVersion ${{ steps.version.outputs.version }} --packDir publish --mainExe ImageBrowse.exe
-          vpk upload github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} --publish --releaseName "Image Browse ${{ steps.version.outputs.version }}" --tag v${{ steps.version.outputs.version }}
+          vpk upload github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} --publish --releaseName "Image Browse Opus ${{ steps.version.outputs.version }}" --tag v${{ steps.version.outputs.version }}
 
   build-macos-arm64:
     runs-on: macos-latest
@@ -101,7 +101,7 @@ jobs:
       - name: Create DMG
         run: |
           create-dmg \
-            --volname "Image Browse" \
+            --volname "Image Browse Opus" \
             --icon-size 100 \
             --app-drop-link 400 200 \
             --icon "ImageBrowse.app" 175 200 \
@@ -168,7 +168,7 @@ jobs:
       - name: Create DMG
         run: |
           create-dmg \
-            --volname "Image Browse" \
+            --volname "Image Browse Opus" \
             --icon-size 100 \
             --app-drop-link 400 200 \
             --icon "ImageBrowse.app" 175 200 \

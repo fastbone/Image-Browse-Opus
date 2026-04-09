@@ -9,7 +9,7 @@ Windows uses the registry for “Open with” associations via the in-app **File
 ```ini
 [Desktop Entry]
 Type=Application
-Name=Image Browse
+Name=Image Browse Opus
 Exec=/opt/image-browse/ImageBrowse.Avalonia %F
 Icon=image-browse
 MimeType=image/jpeg;image/png;image/webp;video/mp4;

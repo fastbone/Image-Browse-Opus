@@ -1,4 +1,4 @@
-# Image Browse
+# Image Browse Opus
 
 A lightweight, fast desktop image and video browser built with .NET 10. **Windows** ships as a **WPF** app (full feature set); **macOS** and **Linux** use **Avalonia** with the same shared core.
 
@@ -10,7 +10,7 @@ A lightweight, fast desktop image and video browser built with .NET 10. **Window
 
 ## Overview
 
-Image Browse is a desktop application for browsing and viewing images and videos. It combines folder-based navigation, a high-performance thumbnail gallery (virtualized on Windows WPF; Avalonia uses a wrap layout with aggressive visible-range thumbnail loading), and a fullscreen media viewer. **Magick.NET** (ImageMagick) powers broad image format support on every platform. **LibVLC** adds integrated video playback and video thumbnails on **Windows** and **macOS** Avalonia builds; **Linux** Avalonia builds expect a system **libvlc** installation (plugins on `LD_LIBRARY_PATH` or distro packages) because a NuGet-native Linux transport is not bundled here. The app supports over 80 image formats and common video containers where LibVLC is available.
+Image Browse Opus is a desktop application for browsing and viewing images and videos. It combines folder-based navigation, a high-performance thumbnail gallery (virtualized on Windows WPF; Avalonia uses a wrap layout with aggressive visible-range thumbnail loading), and a fullscreen media viewer. **Magick.NET** (ImageMagick) powers broad image format support on every platform. **LibVLC** adds integrated video playback and video thumbnails on **Windows** and **macOS** Avalonia builds; **Linux** Avalonia builds expect a system **libvlc** installation (plugins on `LD_LIBRARY_PATH` or distro packages) because a NuGet-native Linux transport is not bundled here. The app supports over 80 image formats and common video containers where LibVLC is available.
 
 ### Platform note
 
@@ -25,7 +25,7 @@ Official builds are published on [GitHub Releases](https://github.com/fastbone/I
 | Platform | Artifact | How to run |
 |----------|----------|------------|
 | **Windows** (x64) | Velopack installer / portable (from release flow) | `ImageBrowse.exe` |
-| **macOS** (Apple Silicon) | `ImageBrowse-{version}-macos-arm64.dmg` | Open the DMG, drag **Image Browse**; executable inside the bundle is `ImageBrowse.Avalonia` |
+| **macOS** (Apple Silicon) | `ImageBrowse-{version}-macos-arm64.dmg` | Open the DMG, drag **Image Browse Opus**; executable inside the bundle is `ImageBrowse.Avalonia` |
 | **macOS** (Intel) | `ImageBrowse-{version}-macos-x64.dmg` | Same as above |
 | **Linux** (x64) | `.deb`, `.rpm`, or `ImageBrowse-{version}-linux-x64.tar.gz` | Install with `dpkg` / `rpm`, or extract the archive and run the published executable |
 
@@ -99,7 +99,7 @@ Official builds are published on [GitHub Releases](https://github.com/fastbone/I
 
 ## Supported Formats
 
-Image Browse supports over **80 image formats** on all platforms (via Magick.NET and native fast paths where available). **Video** playback and **video thumbnails** use LibVLC on Windows (WPF), on Avalonia **macOS** (bundled native libs via NuGet), and on Avalonia **Linux** when VLC/`libvlc` is installed and discoverable by LibVLC.
+Image Browse Opus supports over **80 image formats** on all platforms (via Magick.NET and native fast paths where available). **Video** playback and **video thumbnails** use LibVLC on Windows (WPF), on Avalonia **macOS** (bundled native libs via NuGet), and on Avalonia **Linux** when VLC/`libvlc` is installed and discoverable by LibVLC.
 
 ### Common Raster
 `.jpg` `.jpeg` `.jfif` `.png` `.gif` `.bmp` `.tiff` `.tif` `.ico` `.cur`
@@ -239,7 +239,7 @@ When a video is playing in the WPF build, these shortcuts apply instead:
 1. Open [Releases](https://github.com/fastbone/Image-Browse-Opus/releases).
 2. Download the asset for your platform (see [Platforms and downloads](#platforms-and-downloads)).
 3. **Windows**: Run the installer or extract the portable layout; start `ImageBrowse.exe`. With Velopack, updates are offered on startup and from **About**.
-4. **macOS**: Open the `.dmg`, drag **Image Browse** to Applications (or run from the disk image). The app entry point inside the bundle is `ImageBrowse.Avalonia`.
+4. **macOS**: Open the `.dmg`, drag **Image Browse Opus** to Applications (or run from the disk image). The app entry point inside the bundle is `ImageBrowse.Avalonia`.
 5. **Linux**: Install the `.deb` or `.rpm` with your package manager, or extract `ImageBrowse-*-linux-x64.tar.gz` and run the executable from the extracted folder.
 
 ### Building from Source
@@ -318,7 +318,7 @@ All cached data (thumbnails, metadata, ratings, tags, settings, sort preferences
 
 ## Architecture
 
-Image Browse follows **MVVM**. Shared logic lives in **ImageBrowse.Core**; each UI stack has its own project.
+Image Browse Opus follows **MVVM**. Shared logic lives in **ImageBrowse.Core**; each UI stack has its own project.
 
 ```
 src/ImageBrowse.Core/     Shared models, view models, services, and abstractions
@@ -396,7 +396,7 @@ Please keep pull requests focused on a single change. For large features or arch
 
 ## License
 
-Image Browse is licensed under the **GNU General Public License v3.0**.
+Image Browse Opus is licensed under the **GNU General Public License v3.0**.
 
 A short copyright summary is in [COPYRIGHT](COPYRIGHT). The complete legal text is in [LICENSE](LICENSE).
 

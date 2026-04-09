@@ -2,7 +2,7 @@ name: imagebrowse
 arch: amd64
 version: "${VERSION}"
 maintainer: "fastbone"
-description: "A fast, cross-platform image browser"
+description: "Image Browse Opus — a fast, cross-platform image browser"
 license: GPL-3.0-only
 homepage: "https://github.com/fastbone/Image-Browse-Opus"
 # Video playback uses LibVLC; there is no VideoLAN.LibVLC.Linux NuGet — runtime needs VLC/libvlc.

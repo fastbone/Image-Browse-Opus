@@ -14,7 +14,7 @@
     <Authors>fastbone</Authors>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
     <Copyright>Copyright (c) 2026 fastbone</Copyright>
-    <Description>Image Browse Windows (WPF) app — full-featured flagship build. macOS and Linux use Avalonia; see repository README.</Description>
+    <Description>Image Browse Opus Windows (WPF) app — full-featured flagship build. macOS and Linux use Avalonia; see repository README.</Description>
     <RepositoryUrl>https://github.com/fastbone/Image-Browse-Opus</RepositoryUrl>
   </PropertyGroup>
 

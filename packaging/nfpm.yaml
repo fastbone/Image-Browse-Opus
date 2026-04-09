@@ -6,12 +6,14 @@ description: "Image Browse Opus — a fast, cross-platform image browser"
 license: GPL-3.0-only
 homepage: "https://github.com/fastbone/Image-Browse-Opus"
 # Video playback uses LibVLC; there is no VideoLAN.LibVLC.Linux NuGet — runtime needs VLC/libvlc.
-deb:
-  depends:
-    - libvlc5
-rpm:
-  depends:
-    - vlc-libs
+# Per-format depends live under overrides (root deb:/rpm: no longer accept depends in nfpm v2).
+overrides:
+  deb:
+    depends:
+      - libvlc5
+  rpm:
+    depends:
+      - vlc-libs
 contents:
   - src: ./publish/
     dst: /opt/imagebrowse/

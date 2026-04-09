@@ -252,10 +252,21 @@ jobs:
     needs: [build-windows, build-macos-arm64, build-macos-x64, build-linux-x64]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      - name: Extract release notes from CHANGELOG.md
+        env:
+          GITHUB_REF: ${{ github.ref }}
+        run: python3 scripts/extract_release_notes.py
 
       - name: Upload to GitHub Release
         env:
@@ -264,3 +275,10 @@ jobs:
           TAG="${GITHUB_REF#refs/tags/}"
           find artifacts -type f \( -name "*.dmg" -o -name "*.deb" -o -name "*.rpm" -o -name "*.tar.gz" \) \
             -exec gh release upload "$TAG" {} --repo ${{ github.repository }} --clobber \;
+
+      - name: Publish release notes to GitHub
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          gh release edit "$TAG" --notes-file release_notes.md --repo ${{ github.repository }}

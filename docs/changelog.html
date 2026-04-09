@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Changelog — Image Browse Opus</title>
+<meta name="description" content="Release history for Image Browse Opus. Links to GitHub releases and commit ranges.">
+<meta name="theme-color" content="#E94560">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#0a0a0f;color:#eaeaea;line-height:1.6;overflow-x:hidden}
+a{color:#E94560;text-decoration:none;transition:color .2s}
+a:hover{color:#FF6B81}
+.container{max-width:800px;margin:0 auto;padding:0 24px}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#8888A0}
+.site-nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 0;transition:background .3s,box-shadow .3s}
+.site-nav.scrolled{background:rgba(10,10,15,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 1px 0 rgba(255,255,255,.06)}
+.site-nav .container{max-width:1200px;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;color:#eaeaea}
+.nav-logo{width:32px;height:32px;background:linear-gradient(135deg,#E94560,#FF6B81);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;font-weight:900}
+.nav-links{display:flex;gap:28px;align-items:center}
+.nav-links a{color:#A0A0B0;font-size:14px;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:#eaeaea}
+.nav-links a.active{color:#eaeaea}
+.nav-cta{background:#E94560;color:#fff !important;padding:8px 20px;border-radius:8px;font-weight:600;font-size:14px;transition:background .2s,transform .15s}
+.nav-cta:hover{background:#FF6B81;transform:translateY(-1px)}
+.nav-mobile-btn{display:none;background:none;border:none;color:#eaeaea;font-size:24px;cursor:pointer;padding:4px}
+@media(max-width:768px){
+  .nav-links{display:none}
+  .nav-links.open{display:flex;flex-direction:column;position:absolute;top:60px;left:0;right:0;background:rgba(10,10,15,.97);padding:20px 24px;gap:16px;backdrop-filter:blur(12px)}
+  .nav-mobile-btn{display:block}
+}
+.changelog-main{padding:120px 0 80px}
+.changelog-main h1{font-size:clamp(32px,5vw,44px);font-weight:800;letter-spacing:-.02em;margin-bottom:12px}
+.changelog-lead{font-size:17px;color:#A0A0B0;margin-bottom:40px;line-height:1.6}
+.changelog-lead a{font-weight:600}
+.cl-entry{border-bottom:1px solid rgba(255,255,255,.08);padding:28px 0}
+.cl-entry:last-of-type{border-bottom:none}
+.cl-version{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:#fff;margin-bottom:6px}
+.cl-date{font-size:14px;color:#8888A0;margin-bottom:14px}
+.cl-links{display:flex;flex-direction:column;gap:8px;font-size:15px}
+.cl-links a{color:#FF6B81}
+.cl-links a:hover{color:#E94560}
+.site-footer{padding:40px 0;border-top:1px solid rgba(255,255,255,.05)}
+.site-footer .container{max-width:1200px}
+.footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.footer-copy{font-size:13px;color:#8888A0}
+.footer-links{display:flex;flex-wrap:wrap;gap:12px 20px;justify-content:flex-end}
+.footer-links a{font-size:13px;color:#8888A0;transition:color .2s}
+.footer-links a:hover{color:#eaeaea}
+.footer-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:4px;border:1px solid rgba(255,255,255,.08);font-size:11px;color:#8888A0}
+</style>
+</head>
+<body>
+
+<nav class="site-nav" id="siteNav">
+  <div class="container">
+    <a href="index.html" class="nav-brand">
+      <div class="nav-logo">IB</div>
+      Image Browse Opus
+    </a>
+    <button class="nav-mobile-btn" id="navToggle" aria-label="Toggle navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="index.html#features">Features</a>
+      <a href="index.html#formats">Formats</a>
+      <a href="changelog.html" class="active">Changelog</a>
+      <a href="https://github.com/fastbone/Image-Browse-Opus" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/fastbone/Image-Browse-Opus/releases" class="nav-cta" target="_blank" rel="noopener">Download</a>
+    </div>
+  </div>
+</nav>
+
+<main class="changelog-main">
+  <div class="container">
+    <h1>Changelog</h1>
+    <p class="changelog-lead">Version history for Image Browse Opus. Canonical source: <a href="https://github.com/fastbone/Image-Browse-Opus/blob/main/CHANGELOG.md">CHANGELOG.md</a> on GitHub. Older GitHub Releases had no authored notes; each entry links to the release page and to the commit range since the previous tag.</p>
+
+    <article class="cl-entry">
+      <div class="cl-version">1.3.2</div>
+      <div class="cl-date">2026-04-09</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.3.2">GitHub release (downloads)</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/compare/v1.3.1...v1.3.2">Commits since v1.3.1</a>
+      </div>
+    </article>
+    <article class="cl-entry">
+      <div class="cl-version">1.3.1</div>
+      <div class="cl-date">2026-04-09</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.3.1">GitHub release (downloads)</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/compare/v1.3.0...v1.3.1">Commits since v1.3.0</a>
+      </div>
+    </article>
+    <article class="cl-entry">
+      <div class="cl-version">1.3.0</div>
+      <div class="cl-date">2026-04-09</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.3.0">GitHub release (downloads)</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/compare/v1.2.4...v1.3.0">Commits since v1.2.4</a>
+      </div>
+    </article>
+    <article class="cl-entry">
+      <div class="cl-version">1.2.4</div>
+      <div class="cl-date">2026-04-08</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.2.4">GitHub release (downloads)</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/compare/v1.2.3...v1.2.4">Commits since v1.2.3</a>
+      </div>
+    </article>
+    <article class="cl-entry">
+      <div class="cl-version">1.2.3</div>
+      <div class="cl-date">2026-04-08</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.2.3">GitHub release (downloads)</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/compare/v1.2.2...v1.2.3">Commits since v1.2.2</a>
+      </div>
+    </article>
+    <article class="cl-entry">
+      <div class="cl-version">1.2.2</div>
+      <div class="cl-date">2026-04-08</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.2.2">GitHub release (downloads)</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/compare/v1.2.1...v1.2.2">Commits since v1.2.1</a>
+      </div>
+    </article>
+    <article class="cl-entry">
+      <div class="cl-version">1.2.1</div>
+      <div class="cl-date">2026-04-08</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.2.1">GitHub release (downloads)</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/compare/v1.2.0...v1.2.1">Commits since v1.2.0</a>
+      </div>
+    </article>
+    <article class="cl-entry">
+      <div class="cl-version">1.2.0</div>
+      <div class="cl-date">2026-04-08</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.2.0">GitHub release (downloads)</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/compare/v1.1.0...v1.2.0">Commits since v1.1.0</a>
+      </div>
+    </article>
+    <article class="cl-entry">
+      <div class="cl-version">1.1.0</div>
+      <div class="cl-date">2026-03-25</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.1.0">GitHub release (downloads)</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/compare/v1.0.6...v1.1.0">Commits since v1.0.6</a>
+      </div>
+    </article>
+    <article class="cl-entry">
+      <div class="cl-version">1.0.6</div>
+      <div class="cl-date">2026-03-22</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.0.6">GitHub release (downloads)</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/compare/v1.0.5...v1.0.6">Commits since v1.0.5</a>
+      </div>
+    </article>
+    <article class="cl-entry">
+      <div class="cl-version">1.0.5</div>
+      <div class="cl-date">2026-03-22</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.0.5">GitHub release (downloads)</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/compare/v1.0.4...v1.0.5">Commits since v1.0.4</a>
+      </div>
+    </article>
+    <article class="cl-entry">
+      <div class="cl-version">1.0.4</div>
+      <div class="cl-date">2026-03-22</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.0.4">GitHub release (downloads)</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/compare/v1.0.3...v1.0.4">Commits since v1.0.3</a>
+      </div>
+    </article>
+    <article class="cl-entry">
+      <div class="cl-version">1.0.3</div>
+      <div class="cl-date">2026-03-22</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.0.3">GitHub release (downloads)</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/compare/v1.0.2...v1.0.3">Commits since v1.0.2</a>
+      </div>
+    </article>
+    <article class="cl-entry">
+      <div class="cl-version">1.0.2</div>
+      <div class="cl-date">2026-03-21</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.0.2">GitHub release (downloads)</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/compare/v1.0.1...v1.0.2">Commits since v1.0.1</a>
+      </div>
+    </article>
+    <article class="cl-entry">
+      <div class="cl-version">1.0.1</div>
+      <div class="cl-date">2026-03-21</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.0.1">GitHub release (downloads)</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/compare/v1.0.0...v1.0.1">Commits since v1.0.0</a>
+      </div>
+    </article>
+    <article class="cl-entry">
+      <div class="cl-version">1.0.0</div>
+      <div class="cl-date">2026-03-21</div>
+      <div class="cl-links">
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.0.0">GitHub release (downloads)</a>
+      </div>
+    </article>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-copy">&copy; 2026 fastbone. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="index.html">Home</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/blob/main/THIRD-PARTY-NOTICES.md" target="_blank" rel="noopener">Third-party notices</a>
+        <a href="https://github.com/fastbone/Image-Browse-Opus/blob/main/LICENSE" target="_blank" rel="noopener">
+          <span class="footer-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            GPL-3.0
+          </span>
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+document.documentElement.classList.add('js');
+(function(){
+  var nav=document.getElementById('siteNav');
+  window.addEventListener('scroll',function(){nav.classList.toggle('scrolled',window.scrollY>40)},{passive:true});
+  var btn=document.getElementById('navToggle'),links=document.getElementById('navLinks');
+  btn.addEventListener('click',function(){links.classList.toggle('open')});
+  links.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){links.classList.remove('open')})});
+})();
+</script>
+</body>
+</html>

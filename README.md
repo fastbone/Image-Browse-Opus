@@ -5,6 +5,7 @@ A lightweight, fast desktop image and video browser built with .NET 10. **Window
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/download/dotnet/10.0)
 [![GitHub release](https://img.shields.io/github/v/release/fastbone/Image-Browse-Opus)](https://github.com/fastbone/Image-Browse-Opus/releases)
+[![Changelog](https://img.shields.io/badge/changelog-KEEP%20A%20CHANGELOG-46C4EC.svg)](CHANGELOG.md)
 
 ---
 

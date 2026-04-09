@@ -15,6 +15,11 @@ Historically, GitHub Releases were published without release notes; entries belo
 
 ---
 
+## [1.4.1] - 2026-04-09
+
+- [GitHub release v1.4.1](https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.4.1) — installers and platform artifacts (Windows, macOS, Linux).
+- [Commits since v1.4.0](https://github.com/fastbone/Image-Browse-Opus/compare/v1.4.0...v1.4.1)
+
 ## [1.4.0] - 2026-04-10
 
 - [GitHub release v1.4.0](https://github.com/fastbone/Image-Browse-Opus/releases/tag/v1.4.0) — installers and platform artifacts (Windows, macOS, Linux).
